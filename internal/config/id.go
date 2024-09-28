@@ -12,10 +12,6 @@ const idSize = sha256.Size
 
 type ID [idSize]byte
 
-func Hash(data []byte) ID {
-	return sha256.Sum256(data)
-}
-
 func NewID() ID {
 	id := ID{}
 	_, err := io.ReadFull(rand.Reader, id[:])

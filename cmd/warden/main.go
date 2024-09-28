@@ -20,7 +20,7 @@ func main() {
 	}
 
 	ctx := kong.Parse(&cli,
-		kong.Name("backup"),
+		kong.Name("warden"),
 		kong.Description("A CLI for encrypted backups"),
 		kong.UsageOnError(),
 		kong.ConfigureHelp(kong.HelpOptions{

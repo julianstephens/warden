@@ -3,7 +3,7 @@ package store
 import (
 	"fmt"
 
-	"github.com/julianstephens/backup-mgr-cli/internal/config"
+	"github.com/julianstephens/warden/internal/config"
 )
 
 type Store struct {
