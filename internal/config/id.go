@@ -1,0 +1,47 @@
+package config
+
+import (
+	"crypto/rand"
+	"crypto/sha256"
+	"encoding/hex"
+	"fmt"
+	"io"
+)
+
+const idSize = sha256.Size
+
+type ID [idSize]byte
+
+func Hash(data []byte) ID {
+	return sha256.Sum256(data)
+}
+
+func NewID() ID {
+	id := ID{}
+	_, err := io.ReadFull(rand.Reader, id[:])
+	if err != nil {
+		panic(err)
+	}
+	return id
+}
+
+func ParseID(data string) (ID, error) {
+	if len(data) != hex.EncodedLen(idSize) {
+		return ID{}, fmt.Errorf("invalid id %q of length %d", data, len(data))
+	}
+
+	buf, err := hex.DecodeString(data)
+	if err != nil {
+		return ID{}, fmt.Errorf("invalid id %q: %+v", data, err)
+	}
+
+	i := ID{}
+
+	copy(i[:], buf)
+
+	return i, nil
+}
+
+func (id ID) String() string {
+	return hex.EncodeToString(id[:])
+}
