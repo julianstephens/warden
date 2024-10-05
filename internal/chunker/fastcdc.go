@@ -6,7 +6,6 @@ import (
 	"math/rand"
 
 	"github.com/alecthomas/units"
-	"github.com/julianstephens/warden/internal/warden"
 )
 
 const (
@@ -44,21 +43,20 @@ type Options struct {
 	Seed        int
 }
 
-func NewChunker(reader io.Reader, opts *Options) *Chunker {
+func NewChunker(reader io.Reader) *Chunker {
 	bits := int(math.Round(math.Log2(float64(normalSize))))
-	normSize := warden.DefaultIfNil(opts.AverageSize, int(normalSize)).(int)
 
 	c := &Chunker{
-		minSize: normSize / 4,
-		avgSize: normSize,
-		maxSize: normSize * 8,
+		minSize: int(normalSize) / 4,
+		avgSize: int(normalSize),
+		maxSize: int(normalSize) * 8,
 		maskS:   uint64(mask(bits + normalization)),
 		maskL:   uint64(mask(bits - normalization)),
-		cursor:  normSize * 8 * 2,
+		cursor:  int(normalSize) * 8 * 2,
 		offset:  0,
 		data:    reader,
-		curData: make([]byte, normSize*8*2),
-		seed:    warden.DefaultIfNil(uint64(opts.Seed), rand.Uint64()).(uint64),
+		curData: make([]byte, normalSize*8*2),
+		seed:    rand.Uint64(),
 	}
 
 	return c

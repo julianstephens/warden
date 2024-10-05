@@ -1,8 +1,8 @@
 package warden
 
-func DefaultIfNil(value interface{}, defaultValue interface{}) interface{} {
+func DefaultIfNil[T any](value interface{}, defaultValue interface{}) T {
 	if value != nil {
-		return value
+		return value.(T)
 	}
-	return defaultValue
+	return defaultValue.(T)
 }
