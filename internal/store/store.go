@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"os/user"
-	"time"
 
 	"github.com/julianstephens/warden/internal/crypto"
 	"github.com/julianstephens/warden/internal/warden"
@@ -21,35 +19,18 @@ var (
 	dirs = []string{"keys", "data"}
 )
 
-func NewStore(loc string, password string) (Store, error) {
+func NewStore(loc string, password string) (*Store, error) {
 	conf, err := warden.CreateConfig()
 	if err != nil {
-		return Store{}, fmt.Errorf("unable to create store config: %+v", err)
-	}
-
-	currentUser, err := user.Current()
-	if err != nil {
-		return Store{}, fmt.Errorf("unable to retrieve current user: %+v", err)
-	}
-
-	cK, err := crypto.NewKey(password)
-	if err != nil {
-		return Store{}, err
-	}
-
-	k := Key{
-		id:        warden.NewID(),
-		self:      &cK,
-		Username:  currentUser.Username,
-		CreatedAt: time.Now(),
+		return nil, fmt.Errorf("unable to create store config: %+v", err)
 	}
 
 	err = scaffold(loc)
 	if err != nil {
-		return Store{}, err
+		return nil, err
 	}
 
-	return Store{conf: conf, key: k, loc: loc}, nil
+	return &Store{conf: conf, loc: loc}, nil
 }
 
 func (s *Store) Sync() error {

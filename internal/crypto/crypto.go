@@ -1,126 +1,182 @@
 package crypto
 
 import (
-	"crypto/cipher"
 	"crypto/rand"
 	"crypto/sha256"
 	"errors"
 	"fmt"
 
-	pkgerr "github.com/pkg/errors"
-
 	"github.com/julianstephens/warden/internal/warden"
 	passwordvalidator "github.com/wagslane/go-password-validator"
 	"golang.org/x/crypto/argon2"
 	"golang.org/x/crypto/chacha20poly1305"
+
+	pkgerr "github.com/pkg/errors"
 )
+
+type Params struct {
+	T int `json:"t"`
+	M int `json:"m"`
+	P int `json:"p"`
+	L int `json:"T"`
+}
+
+type Key struct {
+	Data []byte `json:"data"`
+}
 
 const (
 	passwordEntropy = 60
-	keySize         = 32
-	nonceSize       = 24
 	saltSize        = 32
-	totalBufPadding = nonceSize + keySize
+	keySize         = chacha20poly1305.KeySize
+	nonceSize       = chacha20poly1305.NonceSizeX
 )
 
+var DefaultParams = Params{
+	T: 1,
+	M: 64 * 1024,
+	P: 4,
+	L: keySize,
+}
+
 var (
+	ErrInvalidSalt       = errors.New("invalid salt")
 	ErrInvalidPassword   = errors.New("invalid password")
 	ErrInvalidRandomSize = errors.New("cannot generate random array of zero length")
 )
-
-type Key struct {
-	EncryptionKey []byte
-	Aead          cipher.AEAD
-}
 
 func Hash(data []byte) warden.ID {
 	return sha256.Sum256(data)
 }
 
-// NewKey generates a new random encryption key and MAC keys
-func NewKey(password string) (Key, error) {
-	err := passwordvalidator.Validate(password, passwordEntropy)
-	if err != nil {
-		return Key{}, pkgerr.Wrap(ErrInvalidPassword, err.Error())
+func NewIDKey(params Params, password string, salt []byte) (key *Key, err error) {
+	if len(salt) != saltSize {
+		err = pkgerr.Wrap(ErrInvalidSalt, fmt.Sprintf("expected len %d but got %d", saltSize, len(salt)))
+		return
 	}
 
-	salt, err := NewRandom(saltSize)
+	err = passwordvalidator.Validate(password, passwordEntropy)
 	if err != nil {
-		return Key{}, fmt.Errorf("unable to create random salt: %+v", err)
+		err = pkgerr.Wrap(ErrInvalidPassword, err.Error())
+		return
 	}
 
-	key := argon2.IDKey([]byte(password), salt, uint32(5), uint32(64*1024), uint8(4), uint32(32))
-
-	aead, err := chacha20poly1305.NewX(key)
-	if err != nil {
-		return Key{}, fmt.Errorf("unable to generate new MAC key: %+v", err)
+	k := argon2.IDKey([]byte(password), salt, uint32(params.T), uint32(params.M), uint8(params.P), uint32(params.L))
+	key = &Key{
+		Data: k,
 	}
+	return
+}
 
-	return Key{EncryptionKey: key, Aead: aead}, nil
+// NewSessionKey generates a new random file encryption key
+func NewSessionKey(salt []byte) (key *Key, err error) {
+	validateSaltLen(salt)
+
+	key = &Key{}
+	r, err := NewRandom(keySize)
+	if err != nil {
+		return
+	}
+	copy(key.Data[:], r)
+	return
 }
 
 // NewRandom generates a cryptographically secure random byte array
-func NewRandom(size int) ([]byte, error) {
+func NewRandom(size int) (random []byte, err error) {
 	if size == 0 {
-		return []byte{}, ErrInvalidRandomSize
-	}
-	b := make([]byte, size)
-	_, err := rand.Read(b)
-	if err != nil {
-		return []byte{}, err
+		err = ErrInvalidRandomSize
+		return
 	}
 
-	return b, nil
+	random = make([]byte, size)
+	_, err = rand.Read(random)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+func NewSalt() []byte {
+	salt, err := NewRandom(saltSize)
+	if err != nil {
+		panic(pkgerr.Wrap(ErrInvalidSalt, err.Error()))
+	}
+
+	validateSaltLen(salt)
+
+	return salt
 }
 
 // NewNonce generates a random nonce with capacity for the ciphertext
-func NewNonce(size int, ciphertextLen int, overheadLen int) ([]byte, error) {
-	res := make([]byte, size, size+ciphertextLen+overheadLen)
-	_, err := rand.Read(res)
+func NewNonce(ciphertextLen int, overheadLen int) (nonce []byte, err error) {
+	nonce = make([]byte, nonceSize, nonceSize+ciphertextLen+overheadLen)
+	_, err = rand.Read(nonce)
 	if err != nil {
-		return []byte{}, err
+		return
 	}
 
 	var total byte
-	for _, x := range res {
+	for _, x := range nonce {
 		total |= x
 	}
 
 	if total > 0 {
-		return res, nil
+		return
 	}
 
-	return []byte{}, fmt.Errorf("got invalid all-zero nonce")
+	err = fmt.Errorf("got invalid all-zero nonce")
+	return
 }
 
 // Encrypt secures data with XChacha20-Poly1305 algo
-func Encrypt(key Key, plaintext []byte, additionalData *[]byte) ([]byte, error) {
-	nonce, err := NewNonce(key.Aead.NonceSize(), len(plaintext), key.Aead.Overhead())
+func Encrypt(key Key, plaintext []byte, additionalData *[]byte) (encrypted []byte, err error) {
+	aead, err := chacha20poly1305.NewX([]byte(key.Data[:]))
 	if err != nil {
-		return []byte{}, err
+		return
 	}
 
-	var res []byte
+	nonce, err := NewNonce(len(plaintext), aead.Overhead())
+	if err != nil {
+		return
+	}
+
 	if additionalData == nil {
-		res = key.Aead.Seal(nonce, nonce, plaintext, nil)
+		encrypted = aead.Seal(nonce, nonce, plaintext, nil)
 	} else {
-		res = key.Aead.Seal(nonce, nonce, plaintext, *additionalData)
+		encrypted = aead.Seal(nonce, nonce, plaintext, *additionalData)
 	}
 
-	return res, nil
+	return
 }
 
-func Decrypt(key Key, encrypted []byte) ([]byte, error) {
-	if len(encrypted) < key.Aead.NonceSize() {
-		return []byte{}, fmt.Errorf("ciphertext is too short")
-	}
-
-	nonce, ciphertext := encrypted[:key.Aead.NonceSize()], encrypted[key.Aead.NonceSize():]
-
-	decrypted, err := key.Aead.Open(nil, nonce, ciphertext, nil)
+func Decrypt(key Key, encrypted []byte, additionalData *[]byte) (decrypted []byte, err error) {
+	aead, err := chacha20poly1305.NewX([]byte(key.Data[:]))
 	if err != nil {
-		return []byte{}, err
+		return
 	}
 
-	return decrypted, nil
+	if len(encrypted) < aead.NonceSize() {
+		err = fmt.Errorf("ciphertext is too short")
+		return
+	}
+
+	nonce, ciphertext := encrypted[:aead.NonceSize()], encrypted[aead.NonceSize():]
+
+	if additionalData == nil {
+		decrypted, err = aead.Open(nil, nonce, ciphertext, nil)
+	} else {
+		decrypted, err = aead.Open(nil, nonce, ciphertext, *additionalData)
+	}
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+func validateSaltLen(salt []byte) {
+	if len(salt) != saltSize {
+		panic(pkgerr.Wrap(ErrInvalidSalt, fmt.Sprintf("expected len %d, got %d", saltSize, len(salt))))
+	}
 }
