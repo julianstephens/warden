@@ -24,3 +24,11 @@
     - file encryption key randomly generated and stored encrypted in ciphertext header
     - master encryption key derived from password and used to decrypt file encryption key
     - password change requires only decrypting and re-encrypting master key instead of all data
+
+### File Chunking
+
+- [FastCDC](https://www.usenix.org/system/files/conference/atc16/atc16-paper-xia.pdf) content-driven chunking strategy for data deduplication
+
+  - optimizes hash for chunking by using increased zero padding to mimic Rabin-based CDC sliding window
+  - enlarges minimum chunk sized for higher CDC speed
+  - normalized chunking to reduce chunks with sizes at the poles
