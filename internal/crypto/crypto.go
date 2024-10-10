@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/alecthomas/units"
 	"github.com/julianstephens/warden/internal/warden"
 	passwordvalidator "github.com/wagslane/go-password-validator"
 	"golang.org/x/crypto/argon2"
@@ -34,7 +35,7 @@ const (
 
 var DefaultParams = Params{
 	T: 1,
-	M: 64 * 1024,
+	M: int(64 * units.KiB),
 	P: 4,
 	L: keySize,
 }

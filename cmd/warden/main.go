@@ -1,6 +1,11 @@
 package main
 
-import "github.com/alecthomas/kong"
+import (
+	"strings"
+
+	"github.com/alecthomas/kong"
+	"github.com/julianstephens/warden/internal/backend"
+)
 
 type Globals struct {
 	Debug   bool        `short:"D" help:"Enable debug mode"`
@@ -27,7 +32,8 @@ func main() {
 			Compact: true,
 		}),
 		kong.Vars{
-			"version": string(Version),
+			"version":     string(Version),
+			"backendType": strings.Join(backend.BackendTypes, ","),
 		})
 	err := ctx.Run(&cli.Globals)
 	ctx.FatalIfErrorf(err)

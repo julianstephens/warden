@@ -4,12 +4,13 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/julianstephens/warden/internal/backend"
 	"github.com/julianstephens/warden/internal/store"
 	"golang.org/x/term"
 )
 
 type InitCmd struct {
-	Path string `arg:"" name:"path" help:"Path to new store." type:"path"`
+	BackendType string `required:"" short:"t" enum:"${backendTypes}" help:"The backend to create"`
 }
 
 func (i *InitCmd) Run(ctx *Globals) error {
@@ -18,7 +19,12 @@ func (i *InitCmd) Run(ctx *Globals) error {
 		return err
 	}
 
-	store, err := store.NewStore(i.Path, string(pwd))
+	t := backend.BackendTypeStringMap[i.BackendType]
+	if t == backend.BackendType(0) {
+		return fmt.Errorf("received invalid backend type: %+v", t)
+	}
+
+	store, err := store.NewStore(t)
 	if err != nil {
 		return err
 	}

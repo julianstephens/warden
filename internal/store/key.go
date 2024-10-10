@@ -1,12 +1,14 @@
 package store
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
 	"os/user"
 	"time"
 
+	"github.com/julianstephens/warden/internal/backend"
 	"github.com/julianstephens/warden/internal/crypto"
 	"github.com/julianstephens/warden/internal/warden"
 )
@@ -43,7 +45,7 @@ func (k *Key) String() string {
 	return template(fmt.Sprintf("user: %s, host: %s, created: %s>", k.Username, k.Hostname, k.CreatedAt))
 }
 
-func AddKey(store *Store, password string) error {
+func AddKey(store *Store, params *crypto.Params, password string) error {
 	salt := crypto.NewSalt()
 
 	derivedUser, err := crypto.NewIDKey(crypto.DefaultParams, password, salt)
@@ -86,11 +88,15 @@ func AddKey(store *Store, password string) error {
 		Username:    username.Username,
 		Hostname:    hostname,
 		CreatedAt:   time.Now(),
-		Params:      crypto.DefaultParams,
+		Params:      warden.DefaultIfNil[crypto.Params](params, crypto.DefaultParams),
 		Salt:        salt,
 		Data:        encMaster,
 		id:          id,
 	}
+
+	be := *store.Backend
+	ctx := context.Background()
+	be.Handle(ctx, backend.Key, k)
 
 	return nil
 }
