@@ -5,22 +5,16 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"os"
 
-	"github.com/alecthomas/units"
 	"github.com/julianstephens/warden/internal/warden"
 	passwordvalidator "github.com/wagslane/go-password-validator"
 	"golang.org/x/crypto/argon2"
 	"golang.org/x/crypto/chacha20poly1305"
+	"golang.org/x/term"
 
 	pkgerr "github.com/pkg/errors"
 )
-
-type Params struct {
-	T int `json:"t"`
-	M int `json:"m"`
-	P int `json:"p"`
-	L int `json:"T"`
-}
 
 type Key struct {
 	Data []byte `json:"data"`
@@ -33,13 +27,6 @@ const (
 	nonceSize       = chacha20poly1305.NonceSizeX
 )
 
-var DefaultParams = Params{
-	T: 1,
-	M: int(64 * units.KiB),
-	P: 4,
-	L: keySize,
-}
-
 var (
 	ErrInvalidSalt       = errors.New("invalid salt")
 	ErrInvalidPassword   = errors.New("invalid password")
@@ -50,6 +37,7 @@ func Hash(data []byte) warden.ID {
 	return sha256.Sum256(data)
 }
 
+// NewIDKey generates a new user key with a password
 func NewIDKey(params Params, password string, salt []byte) (key *Key, err error) {
 	if len(salt) != saltSize {
 		err = pkgerr.Wrap(ErrInvalidSalt, fmt.Sprintf("expected len %d but got %d", saltSize, len(salt)))
@@ -180,4 +168,30 @@ func validateSaltLen(salt []byte) {
 	if len(salt) != saltSize {
 		panic(pkgerr.Wrap(ErrInvalidSalt, fmt.Sprintf("expected len %d, got %d", saltSize, len(salt))))
 	}
+}
+
+func ReadPassword() (string, error) {
+	fmt.Print("Enter password for new repo: ")
+	pwd, err := term.ReadPassword(int(os.Stdin.Fd()))
+	if err != nil {
+		return "", pkgerr.Wrap(ErrInvalidPassword, err.Error())
+	}
+
+	fmt.Print("Confirm password: ")
+	confPwd, err := term.ReadPassword(int(os.Stdin.Fd()))
+	if err != nil {
+		return "", pkgerr.Wrap(ErrInvalidPassword, err.Error())
+	}
+
+	if len(pwd) != len(confPwd) {
+		return "", pkgerr.Wrap(ErrInvalidPassword, "passwords do not match")
+	}
+
+	for i := range confPwd {
+		if pwd[i] != confPwd[i] {
+			return "", pkgerr.Wrap(ErrInvalidPassword, "passwords do not match")
+		}
+	}
+
+	return string(pwd), nil
 }

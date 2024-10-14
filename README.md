@@ -2,6 +2,8 @@
 
 ## Design
 
+![Crypto Workflow](docs/img/crypto-workflow.png)
+
 ### Encryption/Decryption
 
 - XChaCha20-POLY1305 authenticated encryption with associated data (AEAD)

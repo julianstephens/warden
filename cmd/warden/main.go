@@ -5,6 +5,7 @@ import (
 
 	"github.com/alecthomas/kong"
 	"github.com/julianstephens/warden/internal/backend"
+	"github.com/julianstephens/warden/internal/crypto"
 )
 
 type Globals struct {
@@ -20,7 +21,7 @@ type CLI struct {
 func main() {
 	cli := CLI{
 		Globals: Globals{
-			Version: Version,
+			Version: VersionFlag(Version),
 		},
 	}
 
@@ -32,8 +33,9 @@ func main() {
 			Compact: true,
 		}),
 		kong.Vars{
-			"version":     string(Version),
-			"backendType": strings.Join(backend.BackendTypes, ","),
+			"version":       Version,
+			"backendTypes":  strings.Join(backend.BackendTypes, ","),
+			"defaultParams": crypto.DefaultParams.String(),
 		})
 	err := ctx.Run(&cli.Globals)
 	ctx.FatalIfErrorf(err)

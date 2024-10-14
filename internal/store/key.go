@@ -48,7 +48,7 @@ func (k *Key) String() string {
 func AddKey(store *Store, params *crypto.Params, password string) error {
 	salt := crypto.NewSalt()
 
-	derivedUser, err := crypto.NewIDKey(crypto.DefaultParams, password, salt)
+	derivedUser, err := crypto.NewIDKey(warden.DefaultIfNil[crypto.Params](&params, crypto.DefaultParams), password, salt)
 	if err != nil {
 		return err
 	}
@@ -78,8 +78,7 @@ func AddKey(store *Store, params *crypto.Params, password string) error {
 
 	hostname, err := os.Hostname()
 	if err != nil {
-		err = fmt.Errorf("unable to get system hostname: %+v", err)
-		return err
+		return fmt.Errorf("unable to get system hostname: %+v", err)
 	}
 
 	k := Key{
@@ -94,9 +93,11 @@ func AddKey(store *Store, params *crypto.Params, password string) error {
 		id:          id,
 	}
 
-	be := *store.Backend
 	ctx := context.Background()
-	be.Handle(ctx, backend.Key, k)
+	err = store.backend.Handle(ctx, backend.Key, k)
+	if err != nil {
+		return fmt.Errorf("unable to save store key: %+v", err)
+	}
 
 	return nil
 }

@@ -8,7 +8,7 @@ import (
 
 type VersionFlag string
 
-const Version VersionFlag = "0.0.1"
+const Version string = "0.0.1"
 
 func (v VersionFlag) Decode(ctx *kong.DecodeContext) error { return nil }
 func (v VersionFlag) IsBool() bool                         { return true }
