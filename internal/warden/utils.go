@@ -17,7 +17,7 @@ func MapToStruct[T any](value any) (T, error) {
 		return res, err
 	}
 
-	err = json.Unmarshal(b, res)
+	err = json.Unmarshal(b, &res)
 	if err != nil {
 		return res, err
 	}

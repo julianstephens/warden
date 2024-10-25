@@ -30,5 +30,5 @@ func (p *Params) ToMap() map[string]int {
 }
 
 func (p *Params) String() string {
-	return fmt.Sprintf("t=%d,m=%d,p=%d,T=%d", p.T, p.M, p.P, p.L)
+	return fmt.Sprintf("t=%d;m=%d;p=%d;T=%d", p.T, p.M, p.P, p.L)
 }

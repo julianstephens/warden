@@ -16,8 +16,7 @@ import (
 type Key struct {
 	id warden.ID
 
-	derivedUser *crypto.Key
-	master      *crypto.Key
+	master *crypto.Key
 
 	Username  string        `json:"username"`
 	Hostname  string        `json:"hostname"`
@@ -45,61 +44,69 @@ func (k *Key) String() string {
 	return template(fmt.Sprintf("user: %s, host: %s, created: %s>", k.Username, k.Hostname, k.CreatedAt))
 }
 
-func AddKey(store *Store, params *crypto.Params, password string) error {
+func AddKey(ctx context.Context, store *Store, params crypto.Params, password string) (*Key, error) {
 	salt := crypto.NewSalt()
 
-	derivedUser, err := crypto.NewIDKey(warden.DefaultIfNil[crypto.Params](&params, crypto.DefaultParams), password, salt)
+	derivedUser, err := crypto.NewIDKey(params, password, salt)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	master, err := crypto.NewSessionKey(salt)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	masterJson, err := json.Marshal(master)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	encMaster, err := crypto.Encrypt(*derivedUser, masterJson, nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
-
-	id := crypto.Hash(masterJson)
 
 	username, err := user.Current()
 	if err != nil {
 		err = fmt.Errorf("unable to get system user: %+v", err)
-		return err
+		return nil, err
 	}
 
 	hostname, err := os.Hostname()
 	if err != nil {
-		return fmt.Errorf("unable to get system hostname: %+v", err)
+		return nil, fmt.Errorf("unable to get system hostname: %+v", err)
 	}
 
-	k := Key{
-		derivedUser: derivedUser,
-		master:      master,
-		Username:    username.Username,
-		Hostname:    hostname,
-		CreatedAt:   time.Now(),
-		Params:      warden.DefaultIfNil[crypto.Params](params, crypto.DefaultParams),
-		Salt:        salt,
-		Data:        encMaster,
-		id:          id,
+	k := &Key{
+		master:    master,
+		Username:  username.Username,
+		Hostname:  hostname,
+		CreatedAt: time.Now(),
+		Params:    params,
+		Salt:      salt,
+		Data:      encMaster,
 	}
 
-	ctx := context.Background()
-	err = store.backend.Handle(ctx, backend.Key, k)
+	keyJson, err := json.Marshal(k)
 	if err != nil {
-		return fmt.Errorf("unable to save store key: %+v", err)
+		return nil, fmt.Errorf("unable to marshal key to json: %+v", err)
 	}
 
-	return nil
+	id := crypto.Hash(keyJson)
+	k.id = id
+
+	event := backend.Event{
+		Type: backend.Key,
+		Name: id.String(),
+	}
+
+	err = store.backend.Put(ctx, event, backend.NewByteReader(keyJson))
+	if err != nil {
+		return nil, err
+	}
+
+	return k, nil
 }
 
-func RemoveKey(store *Store, id warden.ID) error { return nil }
+func RemoveKey(id warden.ID) error { return nil }

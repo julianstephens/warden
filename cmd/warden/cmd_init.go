@@ -7,13 +7,12 @@ import (
 	"github.com/julianstephens/warden/internal/backend"
 	"github.com/julianstephens/warden/internal/crypto"
 	"github.com/julianstephens/warden/internal/store"
-	"github.com/mitchellh/mapstructure"
 )
 
 type InitCmd struct {
-	BackendType string         `required:"" short:"t" enum:"${backendTypes}" help:"The backend to create (${backendTypes})"`
+	BackendType string         `required:"" short:"t" enum:"${backendTypes}" help:"The backend to create (${backendTypes})" default:"${defaultBackend}"`
 	Path        string         `short:"p" type:"path" help:"The location of the encrypted backup store"`
-	Params      map[string]int `help:"Argon2id params (t, m, p, T)" default:""`
+	Params      map[string]int `help:"Argon2id params (t, m, p, T)" default:"${defaultParams}"`
 }
 
 func (i *InitCmd) Run(globals *Globals) error {
@@ -26,10 +25,10 @@ func (i *InitCmd) Run(globals *Globals) error {
 
 	var params crypto.Params
 	if i.Params != nil {
-		err := mapstructure.Decode(i.Params, &params)
-		if err != nil {
-			return fmt.Errorf("unable to parse argon2 params: %+v", err)
-		}
+		params.P = i.Params["p"]
+		params.M = i.Params["m"]
+		params.T = i.Params["t"]
+		params.L = i.Params["T"]
 	}
 
 	password, err := crypto.ReadPassword()
@@ -54,9 +53,8 @@ func (i *InitCmd) Run(globals *Globals) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(store)
 
-	err = store.Init(ctx, &params, password)
+	err = store.Init(ctx, params, password)
 	if err != nil {
 		return err
 	}

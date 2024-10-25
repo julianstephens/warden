@@ -61,12 +61,13 @@ func NewIDKey(params Params, password string, salt []byte) (key *Key, err error)
 func NewSessionKey(salt []byte) (key *Key, err error) {
 	validateSaltLen(salt)
 
-	key = &Key{}
+	key = &Key{Data: make([]byte, keySize)}
 	r, err := NewRandom(keySize)
 	if err != nil {
 		return
 	}
 	copy(key.Data[:], r)
+
 	return
 }
 
@@ -79,10 +80,6 @@ func NewRandom(size int) (random []byte, err error) {
 
 	random = make([]byte, size)
 	_, err = rand.Read(random)
-	if err != nil {
-		return
-	}
-
 	return
 }
 
@@ -157,9 +154,6 @@ func Decrypt(key Key, encrypted []byte, additionalData *[]byte) (decrypted []byt
 	} else {
 		decrypted, err = aead.Open(nil, nonce, ciphertext, *additionalData)
 	}
-	if err != nil {
-		return
-	}
 
 	return
 }
@@ -171,13 +165,13 @@ func validateSaltLen(salt []byte) {
 }
 
 func ReadPassword() (string, error) {
-	fmt.Print("Enter password for new repo: ")
+	fmt.Println("Enter password for new repo: ")
 	pwd, err := term.ReadPassword(int(os.Stdin.Fd()))
 	if err != nil {
 		return "", pkgerr.Wrap(ErrInvalidPassword, err.Error())
 	}
 
-	fmt.Print("Confirm password: ")
+	fmt.Println("Confirm password: ")
 	confPwd, err := term.ReadPassword(int(os.Stdin.Fd()))
 	if err != nil {
 		return "", pkgerr.Wrap(ErrInvalidPassword, err.Error())

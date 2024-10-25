@@ -33,9 +33,10 @@ func main() {
 			Compact: true,
 		}),
 		kong.Vars{
-			"version":       Version,
-			"backendTypes":  strings.Join(backend.BackendTypes, ","),
-			"defaultParams": crypto.DefaultParams.String(),
+			"version":        Version,
+			"backendTypes":   strings.Join(backend.BackendTypes, ","),
+			"defaultParams":  crypto.DefaultParams.String(),
+			"defaultBackend": backend.LocalStorage.String(),
 		})
 	err := ctx.Run(&cli.Globals)
 	ctx.FatalIfErrorf(err)

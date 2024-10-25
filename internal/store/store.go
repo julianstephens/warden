@@ -13,7 +13,7 @@ import (
 type Store struct {
 	conf    warden.Config
 	backend backend.Backend
-	master  *crypto.Key
+	master  *Key
 }
 
 func NewStore(be backend.Backend) (*Store, error) {
@@ -21,54 +21,26 @@ func NewStore(be backend.Backend) (*Store, error) {
 	return s, nil
 }
 
-func (s *Store) Init(ctx context.Context, params *crypto.Params, password string) error {
-	p := warden.DefaultIfNil[crypto.Params](params, crypto.DefaultParams)
-
-	conf, err := warden.CreateConfig(p.ToMap())
+func (s *Store) Init(ctx context.Context, params crypto.Params, password string) error {
+	conf, err := warden.CreateConfig(params.ToMap())
 	if err != nil {
 		return err
 	}
 
-	err = s.init(ctx, password, conf)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return s.init(ctx, password, conf)
 }
 
 func (s *Store) init(ctx context.Context, password string, config warden.Config) error {
-	salt := crypto.NewSalt()
-	master, err := crypto.NewSessionKey(salt)
+	params, err := warden.MapToStruct[*crypto.Params](config.Params)
+	if err != nil {
+		return err
+	}
+
+	master, err := AddKey(ctx, s, *params, password)
 	if err != nil {
 		return err
 	}
 	s.master = master
-
-	masterJson, err := json.Marshal(master)
-	if err != nil {
-		return fmt.Errorf("unable to convert master key to json: %+v", err)
-	}
-
-	params, err := warden.MapToStruct[crypto.Params](config.Params)
-	if err != nil {
-		return err
-	}
-
-	derivedUser, err := crypto.NewIDKey(warden.DefaultIfNil[crypto.Params](params, crypto.DefaultParams), password, salt)
-	if err != nil {
-		return err
-	}
-
-	encMaster, err := crypto.Encrypt(*derivedUser, masterJson, nil)
-	if err != nil {
-		return err
-	}
-
-	err = s.backend.Handle(ctx, backend.Key, encMaster)
-	if err != nil {
-		return err
-	}
 
 	return nil
 }

@@ -2,12 +2,13 @@ package backend
 
 import (
 	"context"
+	"fmt"
 )
 
 type Backend interface {
 	GetName() string
 	GetType() BackendType
-	Sync(ctx context.Context, data []byte) error
+	Put(ctx context.Context, event Event, reader IReader) error
 	Handle(ctx context.Context, t FileType, data any) error
 }
 
@@ -15,7 +16,7 @@ type Params interface{}
 
 type backend struct {
 	self    BackendType
-	handler FileHandler
+	handler EventHandler
 	name    string
 }
 
@@ -50,6 +51,6 @@ func NewBackend(t BackendType, params Params) (Backend, error) {
 	case LocalStorage:
 		return newLocalStorage(params.(LocalStorageParams))
 	default:
-		return newLocalStorage(params.(LocalStorageParams))
+		return nil, fmt.Errorf("invalid backend type: %s", t.String())
 	}
 }

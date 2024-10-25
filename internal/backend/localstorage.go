@@ -77,7 +77,8 @@ func (l *Local) GetType() BackendType {
 	return self
 }
 
-func (l *Local) Sync(ctx context.Context, data []byte) error {
+func (l *Local) Put(ctx context.Context, event Event, reader IReader) error {
+	fmt.Printf("got %s event (%s)", event.Type.String(), event.Name)
 	return nil
 }
 
