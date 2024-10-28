@@ -29,7 +29,6 @@ const (
 
 var (
 	ErrInvalidSalt       = errors.New("invalid salt")
-	ErrInvalidPassword   = errors.New("invalid password")
 	ErrInvalidRandomSize = errors.New("cannot generate random array of zero length")
 )
 
@@ -46,7 +45,7 @@ func NewIDKey(params Params, password string, salt []byte) (key *Key, err error)
 
 	err = passwordvalidator.Validate(password, passwordEntropy)
 	if err != nil {
-		err = pkgerr.Wrap(ErrInvalidPassword, err.Error())
+		err = &warden.InvalidPasswordError{Msg: err.Error()}
 		return
 	}
 
@@ -168,22 +167,22 @@ func ReadPassword() (string, error) {
 	fmt.Println("Enter password for new repo: ")
 	pwd, err := term.ReadPassword(int(os.Stdin.Fd()))
 	if err != nil {
-		return "", pkgerr.Wrap(ErrInvalidPassword, err.Error())
+		return "", &warden.InvalidPasswordError{Msg: err.Error()}
 	}
 
 	fmt.Println("Confirm password: ")
 	confPwd, err := term.ReadPassword(int(os.Stdin.Fd()))
 	if err != nil {
-		return "", pkgerr.Wrap(ErrInvalidPassword, err.Error())
+		return "", &warden.InvalidPasswordError{Msg: err.Error()}
 	}
 
 	if len(pwd) != len(confPwd) {
-		return "", pkgerr.Wrap(ErrInvalidPassword, "passwords do not match")
+		return "", &warden.InvalidPasswordError{Msg: "passwords do not match"}
 	}
 
 	for i := range confPwd {
 		if pwd[i] != confPwd[i] {
-			return "", pkgerr.Wrap(ErrInvalidPassword, "passwords do not match")
+			return "", &warden.InvalidPasswordError{Msg: "passwords do not match"}
 		}
 	}
 

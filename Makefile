@@ -14,3 +14,6 @@ debug:
 fmt:
 	@go mod tidy -v
 	@go fmt ./...
+
+lint:
+	@golangci-lint run ./...

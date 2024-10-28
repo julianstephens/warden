@@ -1,6 +1,10 @@
 package warden
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"fmt"
+	"os"
+)
 
 func DefaultIfNil[T any](value interface{}, defaultValue interface{}) T {
 	if value != nil {
@@ -23,4 +27,15 @@ func MapToStruct[T any](value any) (T, error) {
 	}
 
 	return res, nil
+}
+
+func Printf(format string, a ...interface{}) (n int, err error) {
+	return fmt.Printf(format+"\n", a...)
+}
+
+func EnsureDir(path string) error {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return os.Mkdir(path, os.ModeDir|0755)
+	}
+	return nil
 }

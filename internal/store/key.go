@@ -8,7 +8,7 @@ import (
 	"os/user"
 	"time"
 
-	"github.com/julianstephens/warden/internal/backend"
+	"github.com/julianstephens/warden/internal/backend/common"
 	"github.com/julianstephens/warden/internal/crypto"
 	"github.com/julianstephens/warden/internal/warden"
 )
@@ -96,12 +96,12 @@ func AddKey(ctx context.Context, store *Store, params crypto.Params, password st
 	id := crypto.Hash(keyJson)
 	k.id = id
 
-	event := backend.Event{
-		Type: backend.Key,
+	event := common.Event{
+		Type: common.Key,
 		Name: id.String(),
 	}
 
-	err = store.backend.Put(ctx, event, backend.NewByteReader(keyJson))
+	err = store.backend.Put(ctx, event, common.NewByteReader(keyJson))
 	if err != nil {
 		return nil, err
 	}

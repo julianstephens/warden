@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/alecthomas/kong"
-	"github.com/julianstephens/warden/internal/backend"
+	"github.com/julianstephens/warden/internal/backend/common"
 	"github.com/julianstephens/warden/internal/crypto"
 )
 
@@ -34,9 +34,9 @@ func main() {
 		}),
 		kong.Vars{
 			"version":        Version,
-			"backendTypes":   strings.Join(backend.BackendTypes, ","),
+			"backendTypes":   strings.Join(common.BackendTypes, ","),
 			"defaultParams":  crypto.DefaultParams.String(),
-			"defaultBackend": backend.LocalStorage.String(),
+			"defaultBackend": common.LocalStorage.String(),
 		})
 	err := ctx.Run(&cli.Globals)
 	ctx.FatalIfErrorf(err)

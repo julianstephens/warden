@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/julianstephens/warden/internal/backend"
+	"github.com/julianstephens/warden/internal/backend/common"
 	"github.com/julianstephens/warden/internal/crypto"
 	"github.com/julianstephens/warden/internal/store"
 )
@@ -18,8 +19,8 @@ type InitCmd struct {
 func (i *InitCmd) Run(globals *Globals) error {
 	ctx := context.Background()
 
-	t := backend.BackendTypeStringMap[i.BackendType]
-	if t == backend.BackendType(0) {
+	t := common.BackendTypeStringMap[i.BackendType]
+	if t == common.BackendType(0) {
 		return fmt.Errorf("received invalid backend type: %+v", t)
 	}
 
@@ -36,16 +37,16 @@ func (i *InitCmd) Run(globals *Globals) error {
 		return err
 	}
 
-	var be backend.Backend
+	var be common.Backend
 	switch t {
-	case backend.LocalStorage:
+	case common.LocalStorage:
 		if i.Path == "" {
 			return fmt.Errorf("path to store must be provided for local storage backend type")
 		}
 
-		be, err = backend.NewBackend(t, backend.LocalStorageParams{Location: i.Path})
+		be, err = backend.NewBackend(t, common.LocalStorageParams{Location: i.Path})
 		if err != nil {
-			return fmt.Errorf("unable to initliaze localstorage backend: %+v", err)
+			return fmt.Errorf("unable to initialize localstorage backend: %+v", err)
 		}
 	}
 

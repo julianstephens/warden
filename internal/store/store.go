@@ -5,18 +5,18 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/julianstephens/warden/internal/backend"
+	"github.com/julianstephens/warden/internal/backend/common"
 	"github.com/julianstephens/warden/internal/crypto"
 	"github.com/julianstephens/warden/internal/warden"
 )
 
 type Store struct {
 	conf    warden.Config
-	backend backend.Backend
+	backend common.Backend
 	master  *Key
 }
 
-func NewStore(be backend.Backend) (*Store, error) {
+func NewStore(be common.Backend) (*Store, error) {
 	s := &Store{backend: be}
 	return s, nil
 }
