@@ -34,3 +34,21 @@
   - optimizes hash for chunking by using increased zero padding to mimic Rabin-based CDC sliding window
   - enlarges minimum chunk sized for higher CDC speed
   - normalized chunking to reduce chunks with sizes at the poles
+
+## TODO
+
+- [ ] open repository with a password
+- [ ] print repository master key
+- [ ] write repository config
+- [ ] print repository config
+
+## Commands
+
+| Command | Description                                                   |
+| ------- | ------------------------------------------------------------- |
+| init    | Create a new encrypted backup store                           |
+| show    | Print resource information (see appendix for valid resources) |
+
+### Appendix
+
+- valid resources: master, config, pack, blob
