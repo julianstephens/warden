@@ -27,10 +27,12 @@ func (h *LocalHandler) WriteKey(ctx context.Context, filename string, reader com
 		return fmt.Errorf("unable to create key dir: %+v", err)
 	}
 
-	_, err = os.Stat(filename)
+	keyfileLoc := path.Join(loc, "keys", filename)
+
+	_, err = os.Stat(keyfileLoc)
 
 	if os.IsNotExist(err) {
-		keyfile, err := os.Create(filename)
+		keyfile, err := os.Create(keyfileLoc)
 		if err != nil {
 			return fmt.Errorf("unable to create keyfile: %+v", err)
 		}
@@ -50,12 +52,12 @@ func (h *LocalHandler) WriteKey(ctx context.Context, filename string, reader com
 			return err
 		}
 
-		err = makeReadonly(filename)
+		err = makeReadonly(keyfileLoc)
 		if err != nil {
 			return err
 		}
 	} else {
-		return fmt.Errorf("keyfile conflict: %s", filename)
+		return fmt.Errorf("keyfile conflict: %s", keyfileLoc)
 	}
 
 	return nil
