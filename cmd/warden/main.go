@@ -16,6 +16,7 @@ type Globals struct {
 type CLI struct {
 	Globals
 	Init InitCmd `cmd:"" help:"Create a new encrypted backup store."`
+	Show ShowCmd `cmd:"" help:"Print resource information."`
 }
 
 func main() {
@@ -37,6 +38,7 @@ func main() {
 			"backendTypes":   strings.Join(common.BackendTypes, ","),
 			"defaultParams":  crypto.DefaultParams.String(),
 			"defaultBackend": common.LocalStorage.String(),
+			"resources":      strings.Join(common.Resources, ","),
 		})
 	err := ctx.Run(&cli.Globals)
 	ctx.FatalIfErrorf(err)

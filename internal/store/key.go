@@ -44,6 +44,10 @@ func (k *Key) String() string {
 	return template(fmt.Sprintf("user: %s, host: %s, created: %s>", k.Username, k.Hostname, k.CreatedAt))
 }
 
+func (k *Key) Decrypt() *crypto.Key {
+	return k.master
+}
+
 func AddKey(ctx context.Context, store *Store, params crypto.Params, password string) (*Key, error) {
 	salt := crypto.NewSalt()
 

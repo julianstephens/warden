@@ -2,8 +2,6 @@ package store
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 
 	"github.com/julianstephens/warden/internal/backend/common"
 	"github.com/julianstephens/warden/internal/crypto"
@@ -19,6 +17,10 @@ type Store struct {
 func NewStore(be common.Backend) (*Store, error) {
 	s := &Store{backend: be}
 	return s, nil
+}
+
+func OpenStore(ctx context.Context, storeLoc string) (store *Store, err error) {
+	return
 }
 
 func (s *Store) Init(ctx context.Context, params crypto.Params, password string) error {
@@ -45,14 +47,6 @@ func (s *Store) init(ctx context.Context, password string, config warden.Config)
 	return nil
 }
 
-func (s *Store) Sync() error {
-	confData, err := json.Marshal(s.conf)
-	if err != nil {
-		return err
-	}
-
-	confId := crypto.Hash(confData)
-	fmt.Print(confId)
-
-	return nil
+func (s *Store) Key() *Key {
+	return s.master
 }

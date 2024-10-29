@@ -51,4 +51,4 @@
 
 ### Appendix
 
-- valid resources: master, config, pack, blob
+- valid resources: masterkey, config

@@ -16,20 +16,20 @@ type InitCmd struct {
 	Params      map[string]int `help:"Argon2id params (t, m, p, T)" default:"${defaultParams}"`
 }
 
-func (i *InitCmd) Run(globals *Globals) error {
+func (c *InitCmd) Run(globals *Globals) error {
 	ctx := context.Background()
 
-	t := common.BackendTypeStringMap[i.BackendType]
+	t := common.BackendTypeStringMap[c.BackendType]
 	if t == common.BackendType(0) {
 		return fmt.Errorf("received invalid backend type: %+v", t)
 	}
 
 	var params crypto.Params
-	if i.Params != nil {
-		params.P = i.Params["p"]
-		params.M = i.Params["m"]
-		params.T = i.Params["t"]
-		params.L = i.Params["T"]
+	if c.Params != nil {
+		params.P = c.Params["p"]
+		params.M = c.Params["m"]
+		params.T = c.Params["t"]
+		params.L = c.Params["T"]
 	}
 
 	password, err := crypto.ReadPassword()
@@ -40,11 +40,11 @@ func (i *InitCmd) Run(globals *Globals) error {
 	var be common.Backend
 	switch t {
 	case common.LocalStorage:
-		if i.Path == "" {
+		if c.Path == "" {
 			return fmt.Errorf("path to store must be provided for local storage backend type")
 		}
 
-		be, err = backend.NewBackend(t, common.LocalStorageParams{Location: i.Path})
+		be, err = backend.NewBackend(t, common.LocalStorageParams{Location: c.Path})
 		if err != nil {
 			return fmt.Errorf("unable to initialize localstorage backend: %+v", err)
 		}

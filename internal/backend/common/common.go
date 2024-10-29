@@ -38,3 +38,5 @@ type WardenBackend struct {
 	Handler EventHandler
 	Name    string
 }
+
+var Resources = []string{"masterkey", "config"}
