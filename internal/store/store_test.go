@@ -8,10 +8,17 @@ import (
 	"github.com/julianstephens/warden/internal/backend/common"
 	"github.com/julianstephens/warden/internal/crypto"
 	"github.com/julianstephens/warden/internal/store"
+	"github.com/julianstephens/warden/internal/warden"
 )
 
 func TestInit(t *testing.T) {
-	be, err := backend.NewBackend(common.LocalStorage, common.LocalStorageParams{Location: "./tmp/test"})
+	testDir := "./tmp/test"
+	err := warden.EnsureDir(testDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	be, err := backend.NewBackend(common.LocalStorage, common.LocalStorageParams{Location: testDir})
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -44,7 +44,7 @@ func PPrint(data interface{}) (n int, err error) {
 
 func EnsureDir(path string) error {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
-		return os.Mkdir(path, os.ModeDir|0755)
+		return os.MkdirAll(path, os.ModeDir|0755)
 	}
 	return nil
 }
