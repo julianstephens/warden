@@ -50,10 +50,7 @@ func (c *InitCmd) Run(globals *Globals) error {
 		}
 	}
 
-	store, err := store.NewStore(be)
-	if err != nil {
-		return err
-	}
+	store := store.NewStore(be)
 
 	err = store.Init(ctx, params, password)
 	if err != nil {

@@ -48,41 +48,42 @@ func (k *Key) Decrypt() *crypto.Key {
 	return k.master
 }
 
-func AddKey(ctx context.Context, store *Store, params crypto.Params, password string) (*Key, error) {
+func deriveKey(ctx context.Context, params crypto.Params, password string) (key *Key, err error) {
 	salt := crypto.NewSalt()
 
 	derivedUser, err := crypto.NewIDKey(params, password, salt)
 	if err != nil {
-		return nil, err
+		return
 	}
 
 	master, err := crypto.NewSessionKey(salt)
 	if err != nil {
-		return nil, err
+		return
 	}
 
 	masterJson, err := json.Marshal(master)
 	if err != nil {
-		return nil, err
+		return
 	}
 
 	encMaster, err := crypto.Encrypt(*derivedUser, masterJson, nil)
 	if err != nil {
-		return nil, err
+		return
 	}
 
 	username, err := user.Current()
 	if err != nil {
 		err = fmt.Errorf("unable to get system user: %+v", err)
-		return nil, err
+		return
 	}
 
 	hostname, err := os.Hostname()
 	if err != nil {
-		return nil, fmt.Errorf("unable to get system hostname: %+v", err)
+		err = fmt.Errorf("unable to get system hostname: %+v", err)
+		return
 	}
 
-	k := &Key{
+	key = &Key{
 		master:    master,
 		Username:  username.Username,
 		Hostname:  hostname,
@@ -90,6 +91,24 @@ func AddKey(ctx context.Context, store *Store, params crypto.Params, password st
 		Params:    params,
 		Salt:      salt,
 		Data:      encMaster,
+	}
+
+	return
+}
+
+func LoadKey(ctx context.Context, store *Store, params crypto.Params, password string) (*Key, error) {
+	k, err := deriveKey(ctx, params, password)
+	if err != nil {
+		return nil, err
+	}
+
+	return k, nil
+}
+
+func AddKey(ctx context.Context, store *Store, params crypto.Params, password string) (*Key, error) {
+	k, err := deriveKey(ctx, params, password)
+	if err != nil {
+		return nil, err
 	}
 
 	keyJson, err := json.Marshal(k)
