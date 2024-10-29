@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
+
+	"github.com/jedib0t/go-pretty/v6/text"
 )
 
 func DefaultIfNil[T any](value interface{}, defaultValue interface{}) T {
@@ -31,6 +34,12 @@ func MapToStruct[T any](value any) (T, error) {
 
 func Printf(format string, a ...interface{}) (n int, err error) {
 	return fmt.Printf(format+"\n", a...)
+}
+
+func PPrint(data interface{}) (n int, err error) {
+	transformer := text.NewJSONTransformer("", strings.Repeat(" ", 2))
+	pJson := transformer(data)
+	return fmt.Println(pJson)
 }
 
 func EnsureDir(path string) error {
