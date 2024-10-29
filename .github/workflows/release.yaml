@@ -54,6 +54,7 @@ jobs:
             echo "GOARCH=$GOARCH" >> $GITHUB_ENV
         - name: Build
           run: |
-            go build -o "$BINARY_NAME" -v
+            go build -o "$BINARY_NAME" -v ./cmd/warden
         - name: Release
+          if: startsWith(github.ref, 'refs/tags/')
           uses: softprops/action-gh-release@v2
