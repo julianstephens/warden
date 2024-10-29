@@ -1,10 +1,13 @@
-package main
+package scripts
 
 import (
 	"fmt"
-	"math/rand"
 	"time"
+
+	"math/rand"
 )
+
+type GT struct{}
 
 var (
 	masterTable = []uint64{}
@@ -20,7 +23,7 @@ func add(val uint64) {
 	gearTable[val] = true
 }
 
-func main() {
+func Run() {
 	for i := 0; i < 256; i++ {
 		s := rand.NewSource(time.Now().UnixNano())
 		r := rand.New(s)
