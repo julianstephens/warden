@@ -3,9 +3,12 @@ package store
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"os/user"
+	"path"
+	"strings"
 	"time"
 
 	"github.com/julianstephens/warden/internal/backend/common"
@@ -17,6 +20,7 @@ type Key struct {
 	id warden.ID
 
 	master *crypto.Key
+	user   *crypto.Key
 
 	Username  string        `json:"username"`
 	Hostname  string        `json:"hostname"`
@@ -48,9 +52,97 @@ func (k *Key) Decrypt() *crypto.Key {
 	return k.master
 }
 
-func deriveKey(ctx context.Context, params crypto.Params, password string) (key *Key, err error) {
+func LoadKey(ctx context.Context, store *Store, storeLoc string, params crypto.Params, password string) (*Key, error) {
+	key, err := findKey(path.Join(storeLoc, "keys"), password)
+	if err != nil {
+		return nil, err
+	}
+
+	keyJson, err := json.Marshal(key)
+	if err != nil {
+		return nil, fmt.Errorf("unable to marshal key to json: %+v", err)
+	}
+
+	id := crypto.Hash(keyJson)
+	key.id = id
+
+	return key, nil
+}
+
+func AddKey(ctx context.Context, store *Store, params crypto.Params, password string) (*Key, error) {
 	salt := crypto.NewSalt()
 
+	k, err := deriveKey(params, password, salt)
+	if err != nil {
+		return nil, err
+	}
+
+	keyJson, err := json.Marshal(k)
+	if err != nil {
+		return nil, fmt.Errorf("unable to marshal key to json: %+v", err)
+	}
+
+	id := crypto.Hash(keyJson)
+	k.id = id
+	name := id.String()
+
+	event := common.Event{
+		Type: common.Key,
+		Name: &name,
+	}
+
+	err = store.backend.Save(ctx, event, common.NewByteReader(keyJson))
+	if err != nil {
+		return nil, err
+	}
+
+	return k, nil
+}
+
+func findKey(keyDir string, password string) (*Key, error) {
+	keys, err := os.ReadDir(keyDir)
+	if err != nil {
+		return nil, err
+	}
+
+	var derivedKey *Key
+	found := false
+
+	for _, k := range keys {
+		if k.IsDir() {
+			return nil, errors.New("malformed store: invalid keys dir")
+		}
+
+		if !strings.HasSuffix(k.Name(), "json") {
+			return nil, errors.New("malformed key: invalid key extension")
+		}
+
+		loadedKey, err := warden.LoadJSON[Key](path.Join(keyDir, k.Name()))
+		if err != nil {
+			return nil, fmt.Errorf("unable to load key (%s): %+v", k.Name(), err)
+		}
+
+		derivedKey, err = deriveKey(loadedKey.Params, password, loadedKey.Salt)
+		if err != nil {
+			continue
+		}
+
+		_, err = crypto.Decrypt(*derivedKey.user, loadedKey.Data, nil)
+		if err != nil {
+			continue
+		} else {
+			found = true
+		}
+	}
+
+	if !found {
+		return nil, errors.New("unable to retrieve store key")
+	}
+
+	return derivedKey, nil
+}
+
+func deriveKey(params crypto.Params, password string, salt []byte) (key *Key, err error) {
 	derivedUser, err := crypto.NewIDKey(params, password, salt)
 	if err != nil {
 		return
@@ -85,6 +177,7 @@ func deriveKey(ctx context.Context, params crypto.Params, password string) (key 
 
 	key = &Key{
 		master:    master,
+		user:      derivedUser,
 		Username:  username.Username,
 		Hostname:  hostname,
 		CreatedAt: time.Now(),
@@ -95,41 +188,3 @@ func deriveKey(ctx context.Context, params crypto.Params, password string) (key 
 
 	return
 }
-
-func LoadKey(ctx context.Context, store *Store, params crypto.Params, password string) (*Key, error) {
-	k, err := deriveKey(ctx, params, password)
-	if err != nil {
-		return nil, err
-	}
-
-	return k, nil
-}
-
-func AddKey(ctx context.Context, store *Store, params crypto.Params, password string) (*Key, error) {
-	k, err := deriveKey(ctx, params, password)
-	if err != nil {
-		return nil, err
-	}
-
-	keyJson, err := json.Marshal(k)
-	if err != nil {
-		return nil, fmt.Errorf("unable to marshal key to json: %+v", err)
-	}
-
-	id := crypto.Hash(keyJson)
-	k.id = id
-
-	event := common.Event{
-		Type: common.Key,
-		Name: id.String(),
-	}
-
-	err = store.backend.Put(ctx, event, common.NewByteReader(keyJson))
-	if err != nil {
-		return nil, err
-	}
-
-	return k, nil
-}
-
-func RemoveKey(id warden.ID) error { return nil }

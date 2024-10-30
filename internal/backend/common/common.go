@@ -29,8 +29,7 @@ var BackendTypes = func() []string {
 }()
 
 type Backend interface {
-	Put(ctx context.Context, event Event, reader IReader) error
-	// Handle(ctx context.Context, t FileType, data any) error
+	Save(ctx context.Context, event Event, reader IReader) error
 }
 
 type WardenBackend struct {

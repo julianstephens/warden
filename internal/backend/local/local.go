@@ -6,15 +6,18 @@ import (
 	"fmt"
 	"os"
 
+	pkgerr "github.com/pkg/errors"
+
 	"github.com/julianstephens/warden/internal/backend/common"
 	"github.com/julianstephens/warden/internal/warden"
-	pkgerr "github.com/pkg/errors"
 )
 
 type Local struct {
 	common.WardenBackend
 	location string
 }
+
+type LocationCtxKey string
 
 const (
 	name = "LocalStorage"
@@ -64,16 +67,30 @@ func scaffold(storeLoc string) error {
 	return nil
 }
 
-func (l *Local) Put(ctx context.Context, event common.Event, reader common.IReader) error {
-	warden.Printf("got %s event (%s)", event.Type.String(), event.Name)
+func getCtxLocation(ctx context.Context, k LocationCtxKey) any {
+	if v := ctx.Value(k); v != nil {
+		return v
+	}
+
+	return nil
+}
+
+func (l *Local) Save(ctx context.Context, event common.Event, reader common.IReader) error {
+	k := LocationCtxKey("location")
+	ctx = context.WithValue(ctx, k, l.location)
 
 	switch event.Type {
 	case common.Key:
-		ctx := context.WithValue(ctx, "location", l.location)
-		return l.WardenBackend.Handler.WriteKey(ctx, fmt.Sprintf("%s.json", event.Name), reader)
+		if event.Name == nil {
+			return fmt.Errorf("no name provided for key file")
+		}
+		return l.WardenBackend.Handler.WriteKey(ctx, fmt.Sprintf("%s.json", *event.Name), reader)
 	case common.Config:
-		// TODO: handle config save
+		return l.WardenBackend.Handler.WriteConfig(ctx, reader)
 	case common.Pack:
+		if event.Name == nil {
+			return fmt.Errorf("no name provided for pack file")
+		}
 		// TODO: handle pack save
 	default:
 		return fmt.Errorf("got invalid event type: %s", event.Type.String())

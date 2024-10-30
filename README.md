@@ -37,10 +37,10 @@
 
 ## TODO
 
-- [ ] open repository with a password
-- [ ] print repository master key
-- [ ] write repository config
-- [ ] print repository config
+- [x] open store with a password
+- [x] print store master key
+- [x] write store config
+- [x] print store config
 
 ## Commands
 

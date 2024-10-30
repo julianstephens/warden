@@ -3,6 +3,7 @@ module github.com/julianstephens/warden
 go 1.23.2
 
 require (
+	github.com/agiledragon/gomonkey/v2 v2.12.0
 	github.com/alecthomas/kong v1.2.1
 	github.com/alecthomas/units v0.0.0-20240927000941-0f3dac36c52b
 	github.com/jedib0t/go-pretty/v6 v6.6.1

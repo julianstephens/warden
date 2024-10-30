@@ -15,7 +15,7 @@ import (
 // 	t.Errorf("expected (%+v) is not equal to actual (%+v)", expected, actual)
 // }
 
-func assertSliceEqual[T comparable](t *testing.T, expected []T, actual []T) {
+func AssertSliceEqual[T comparable](t *testing.T, expected []T, actual []T) {
 	t.Helper()
 	if len(expected) != len(actual) {
 		t.Errorf("expected (%+v) is not equal to actual (%+v): len(expected)=%d len(actual)=%d",

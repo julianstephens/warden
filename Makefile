@@ -1,5 +1,5 @@
 
-.PHONY: fmt build debug
+.PHONY: fmt build debug test
 
 
 build:
@@ -9,8 +9,14 @@ build:
 debug:
 	@go build -gcflags=all="-N -l" -o ./bin/warden ./cmd/warden
 	@chmod +x ./bin/warden
-	@./bin/warden init -p ./tmp/test
+	@./bin/warden init -s ./tmp/test
+	@./bin/warden show -s ./tmp/test masterkey
 
 fmt:
 	@go mod tidy -v
 	@go fmt ./...
+
+test:
+	@go test `go list ./... | grep -v scripts` -coverprofile cover.prof
+	@covreport
+	@open cover.html

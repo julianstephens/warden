@@ -2,6 +2,7 @@ package local
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -13,54 +14,94 @@ import (
 
 type LocalHandler struct{}
 
-func (h *LocalHandler) WriteConfig(data []byte) error { return nil }
+var (
+	ErrInvalidByteReader = errors.New("invalid byte reader")
+	ErrNoStoreLocation   = errors.New("no store location provided")
+)
+
+func (h *LocalHandler) WriteConfig(ctx context.Context, reader common.IReader) error {
+	bReader, ok := reader.(*common.ByteReader)
+	if !ok {
+		return ErrInvalidByteReader
+	}
+
+	loc := getCtxLocation(ctx, LocationCtxKey("location"))
+	if loc == nil {
+		return ErrNoStoreLocation
+	}
+
+	err := writeBytes(path.Join(loc.(string), "config.json"), bReader.Reader, bReader.Len)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (h *LocalHandler) WriteKey(ctx context.Context, filename string, reader common.IReader) error {
 	bReader, ok := reader.(*common.ByteReader)
 	if !ok {
-		return fmt.Errorf("invalid byte reader")
+		return ErrInvalidByteReader
 	}
 
-	loc := ctx.Value("location").(string)
+	loc := getCtxLocation(ctx, LocationCtxKey("location"))
+	if loc == nil {
+		return ErrNoStoreLocation
+	}
 
-	err := warden.EnsureDir(path.Join(loc, "keys"))
+	err := warden.EnsureDir(path.Join(loc.(string), "keys"))
 	if err != nil {
 		return fmt.Errorf("unable to create key dir: %+v", err)
 	}
 
-	keyfileLoc := path.Join(loc, "keys", filename)
-
-	_, err = os.Stat(keyfileLoc)
-
-	if os.IsNotExist(err) {
-		keyfile, err := os.Create(keyfileLoc)
-		if err != nil {
-			return fmt.Errorf("unable to create keyfile: %+v", err)
-		}
-		defer keyfile.Close()
-
-		wroteBytes, err := io.Copy(keyfile, bReader.Reader)
-		if err != nil {
-			return err
-		}
-
-		if wroteBytes != bReader.Len {
-			return fmt.Errorf("expected to write %d bytes, wrote %d", bReader.Len, wroteBytes)
-		}
-
-		err = keyfile.Close()
-		if err != nil {
-			return err
-		}
-
-		err = makeReadonly(keyfileLoc)
-		if err != nil {
-			return err
-		}
-	} else {
-		return fmt.Errorf("keyfile conflict: %s", keyfileLoc)
+	keyfileLoc := path.Join(loc.(string), "keys", filename)
+	err = writeBytes(keyfileLoc, bReader.Reader, bReader.Len)
+	if err != nil {
+		return err
 	}
 
 	return nil
 }
 
 func (h *LocalHandler) WritePack(data []byte) error { return nil }
+
+func writeBytes(file string, reader io.Reader, readerLen int64) (err error) {
+	_, err = os.Stat(file)
+
+	var f *os.File
+	var wroteBytes int64
+
+	if os.IsNotExist(err) {
+		f, err = os.Create(file)
+		if err != nil {
+			err = fmt.Errorf("unable to create file: %+v", err)
+			return
+		}
+		defer f.Close()
+
+		wroteBytes, err = io.Copy(f, reader)
+		if err != nil {
+			return
+		}
+
+		if wroteBytes != readerLen {
+			err = fmt.Errorf("expected to write %d bytes, wrote %d", readerLen, wroteBytes)
+			return
+		}
+
+		err = f.Close()
+		if err != nil {
+			return
+		}
+
+		err = makeReadonly(file)
+		if err != nil {
+			return
+		}
+	} else {
+		err = fmt.Errorf("file conflict: %s", file)
+		return
+	}
+
+	return
+}

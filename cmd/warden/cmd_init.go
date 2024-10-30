@@ -12,7 +12,7 @@ import (
 
 type InitCmd struct {
 	BackendType string         `required:"" short:"t" enum:"${backendTypes}" help:"The backend to create (${backendTypes})" default:"${defaultBackend}"`
-	Path        string         `short:"p" type:"path" help:"The location of the encrypted backup store"`
+	Store       string         `short:"s" type:"path" help:"The location of the encrypted backup store"`
 	Params      map[string]int `help:"Argon2id params (t, m, p, T)" default:"${defaultParams}"`
 }
 
@@ -40,11 +40,11 @@ func (c *InitCmd) Run(globals *Globals) error {
 	var be common.Backend
 	switch t {
 	case common.LocalStorage:
-		if c.Path == "" {
+		if c.Store == "" {
 			return fmt.Errorf("path to store must be provided for local storage backend type")
 		}
 
-		be, err = backend.NewBackend(t, common.LocalStorageParams{Location: c.Path})
+		be, err = backend.NewBackend(t, common.LocalStorageParams{Location: c.Store})
 		if err != nil {
 			return fmt.Errorf("unable to initialize localstorage backend: %+v", err)
 		}

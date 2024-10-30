@@ -10,5 +10,5 @@ const (
 
 type Event struct {
 	Type FileType
-	Name string
+	Name *string
 }

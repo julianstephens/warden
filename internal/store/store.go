@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"path"
 
@@ -54,7 +55,7 @@ func (s *Store) open(ctx context.Context, storeLoc string) (err error) {
 		return
 	}
 
-	master, err := LoadKey(ctx, s, params, password)
+	master, err := LoadKey(ctx, s, storeLoc, params, password)
 	if err != nil {
 		return
 	}
@@ -68,6 +69,7 @@ func (s *Store) Init(ctx context.Context, params crypto.Params, password string)
 	if err != nil {
 		return err
 	}
+	s.conf = conf
 
 	return s.init(ctx, password, conf)
 }
@@ -84,9 +86,23 @@ func (s *Store) init(ctx context.Context, password string, config warden.Config)
 	}
 	s.master = master
 
+	confJson, err := json.Marshal(&s.conf)
+	if err != nil {
+		return
+	}
+
+	err = s.backend.Save(ctx, common.Event{Name: nil, Type: common.Config}, common.NewByteReader(confJson))
+	if err != nil {
+		return
+	}
+
 	return
 }
 
 func (s *Store) Key() *Key {
 	return s.master
+}
+
+func (s *Store) Config() warden.Config {
+	return s.conf
 }
