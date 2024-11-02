@@ -1,6 +1,6 @@
 # warden
 
-A CLI for creating encrypted backups.
+A CLI for creating encrypted backups. See [architecture docs](/docs/architecture.md) for more info.
 
 ## Design
 
@@ -12,10 +12,11 @@ A CLI for creating encrypted backups.
 
 ## Commands
 
-| Command | Description                                                   |
-| ------- | ------------------------------------------------------------- |
-| init    | Create a new encrypted backup store                           |
-| show    | Print resource information (see appendix for valid resources) |
+| Command      | Description                                                   |
+| ------------ | ------------------------------------------------------------- |
+| init         | Create a new encrypted backup store                           |
+| show         | Print resource information (see appendix for valid resources) |
+| backup <dir> | Create a new backup of a directory                            |
 
 ### Appendix
 
