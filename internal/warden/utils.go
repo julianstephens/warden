@@ -33,7 +33,7 @@ func MapToStruct[T any](value any) (T, error) {
 }
 
 func Printf(format string, a ...interface{}) (n int, err error) {
-	return fmt.Printf(format+"\n", a...)
+	return fmt.Printf("\n"+format+"\n", a...)
 }
 
 func PPrint(data interface{}) (n int, err error) {

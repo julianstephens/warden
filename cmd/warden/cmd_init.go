@@ -3,11 +3,15 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/julianstephens/warden/internal/backend"
 	"github.com/julianstephens/warden/internal/backend/common"
 	"github.com/julianstephens/warden/internal/crypto"
 	"github.com/julianstephens/warden/internal/store"
+	"github.com/julianstephens/warden/internal/warden"
 )
 
 type InitCmd struct {
@@ -16,8 +20,19 @@ type InitCmd struct {
 	Params      map[string]int `help:"Argon2id params (t, m, p, T)" default:"${defaultParams}"`
 }
 
-func (c *InitCmd) Run(globals *Globals) error {
-	ctx := context.Background()
+func (c *InitCmd) Run(ctx context.Context, globals *Globals) error {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, os.Interrupt, syscall.SIGINT)
+	defer func() {
+		fmt.Println()
+		warden.Printf("Ctrl/Cmd+C again to quit...")
+		<-sigs
+		fmt.Println("Interrupted. Stopping.")
+		os.Exit(warden.ExitCodeInterrupt)
+	}()
 
 	t := common.BackendTypeStringMap[c.BackendType]
 	if t == common.BackendType(0) {

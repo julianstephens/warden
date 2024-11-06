@@ -2,6 +2,11 @@ package warden
 
 import "fmt"
 
+const (
+	ExitCodeErr       = 1
+	ExitCodeInterrupt = 2
+)
+
 type InvalidStoreError struct {
 	Msg string
 }

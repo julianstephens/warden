@@ -7,13 +7,13 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/julianstephens/warden/internal/warden"
+	pkgerr "github.com/pkg/errors"
 	passwordvalidator "github.com/wagslane/go-password-validator"
 	"golang.org/x/crypto/argon2"
 	"golang.org/x/crypto/chacha20poly1305"
 	"golang.org/x/term"
 
-	pkgerr "github.com/pkg/errors"
+	"github.com/julianstephens/warden/internal/warden"
 )
 
 type Key struct {
@@ -164,27 +164,31 @@ func validateSaltLen(salt []byte) {
 }
 
 func ReadPassword() (string, error) {
-	fmt.Println("Enter password for new repo: ")
-	pwd, err := term.ReadPassword(int(os.Stdin.Fd()))
+	state, err := term.MakeRaw(int(os.Stdin.Fd()))
+	if err != nil {
+		panic(err)
+	}
+	defer term.Restore(int(os.Stdin.Fd()), state)
+
+	terminal := term.NewTerminal(os.Stdout, "")
+	pwd, err := terminal.ReadPassword("Enter password for new store: ")
 	if err != nil {
 		return "", &warden.InvalidPasswordError{Msg: err.Error()}
 	}
 
-	fmt.Println("Confirm password: ")
-	confPwd, err := term.ReadPassword(int(os.Stdin.Fd()))
+	if pwd == "" {
+		return "", &warden.InvalidPasswordError{Msg: "password cannot be empty"}
+	}
+
+	confPwd, err := terminal.ReadPassword("Confirm password: ")
 	if err != nil {
 		return "", &warden.InvalidPasswordError{Msg: err.Error()}
 	}
 
-	if len(pwd) != len(confPwd) {
-		return "", &warden.InvalidPasswordError{Msg: "passwords do not match"}
+	errNoMatch := &warden.InvalidPasswordError{Msg: "passwords do not match"}
+	if pwd != confPwd {
+		return "", errNoMatch
 	}
 
-	for i := range confPwd {
-		if pwd[i] != confPwd[i] {
-			return "", &warden.InvalidPasswordError{Msg: "passwords do not match"}
-		}
-	}
-
-	return string(pwd), nil
+	return pwd, nil
 }
