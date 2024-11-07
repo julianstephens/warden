@@ -1,6 +1,10 @@
 package common
 
-import "context"
+import (
+	"context"
+
+	"github.com/julianstephens/warden/internal/storage"
+)
 
 type BackendType int
 
@@ -30,6 +34,7 @@ var BackendTypes = func() []string {
 
 type Backend interface {
 	Save(ctx context.Context, event Event, reader IReader) error
+	ListSnapshots(ctx context.Context) ([]storage.Snapshot, error)
 }
 
 type WardenBackend struct {

@@ -33,7 +33,7 @@ func createAndInitStore(ctx context.Context, t *testing.T) *store.Store {
 	if err != nil {
 		t.Fatal(err)
 	}
-	store := store.NewStore(be)
+	store := store.NewStore(be, testDir)
 
 	err = store.Init(ctx, crypto.DefaultParams, testPwd)
 	if err != nil {
@@ -43,20 +43,20 @@ func createAndInitStore(ctx context.Context, t *testing.T) *store.Store {
 	return store
 }
 
-func assertSliceEqual[T comparable](t *testing.T, expected []T, actual []T) {
-	t.Helper()
-	if len(expected) != len(actual) {
-		t.Errorf("expected (%+v) is not equal to actual (%+v): len(expected)=%d len(actual)=%d",
-			expected, actual, len(expected), len(actual))
-	}
-	for i := range expected {
-		if expected[i] != actual[i] {
-			t.Errorf("expected[%d] (%+v) is not equal to actual[%d] (%+v)",
-				i, expected[i],
-				i, actual[i])
-		}
-	}
-}
+// func assertSliceEqual[T comparable](t *testing.T, expected []T, actual []T) {
+// 	t.Helper()
+// 	if len(expected) != len(actual) {
+// 		t.Errorf("expected (%+v) is not equal to actual (%+v): len(expected)=%d len(actual)=%d",
+// 			expected, actual, len(expected), len(actual))
+// 	}
+// 	for i := range expected {
+// 		if expected[i] != actual[i] {
+// 			t.Errorf("expected[%d] (%+v) is not equal to actual[%d] (%+v)",
+// 				i, expected[i],
+// 				i, actual[i])
+// 		}
+// 	}
+// }
 
 func TestInit(t *testing.T) {
 	resetStore(t)
@@ -118,5 +118,30 @@ func TestOpen(t *testing.T) {
 
 	if string(original.Key().Decrypt().Data) == string(opened.Key().Decrypt().Data) {
 		t.Fatalf("expected decrypted key %s, got %s", string(original.Key().Decrypt().Data), string(opened.Key().Decrypt().Data))
+	}
+}
+
+func TestBackup(t *testing.T) {
+	resetStore(t)
+
+	ctx := context.Background()
+	createAndInitStore(ctx, t)
+
+	patches := mp.ApplyFuncReturn(crypto.ReadPassword, testPwd, nil)
+	defer patches.Reset()
+
+	s, err := store.OpenStore(ctx, testDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = s.Backup(ctx, testDir)
+	if err == nil {
+		t.Fatal("should error on backup dir equals warden store dir")
+	}
+
+	err = s.Backup(ctx, "/home/julian/workspace/notes")
+	if err != nil {
+		t.Fatal(err)
 	}
 }

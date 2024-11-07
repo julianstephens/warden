@@ -65,7 +65,7 @@ func (c *InitCmd) Run(ctx context.Context, globals *Globals) error {
 		}
 	}
 
-	store := store.NewStore(be)
+	store := store.NewStore(be, c.Store)
 
 	err = store.Init(ctx, params, password)
 	if err != nil {

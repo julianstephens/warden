@@ -4,11 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
+	"path"
+	"path/filepath"
 
 	pkgerr "github.com/pkg/errors"
 
 	"github.com/julianstephens/warden/internal/backend/common"
+	"github.com/julianstephens/warden/internal/storage"
 	"github.com/julianstephens/warden/internal/warden"
 )
 
@@ -97,4 +101,28 @@ func (l *Local) Save(ctx context.Context, event common.Event, reader common.IRea
 	}
 
 	return nil
+}
+
+func (l *Local) ListSnapshots(ctx context.Context) ([]storage.Snapshot, error) {
+	var snaps []storage.Snapshot
+
+	snapDir := path.Join(l.location, "snapshots")
+	if _, err := os.Stat(snapDir); os.IsNotExist(err) {
+		return snaps, nil
+	}
+
+	err := filepath.WalkDir(snapDir, func(path string, d fs.DirEntry, err error) error {
+		s, err := warden.LoadJSON[storage.Snapshot](path)
+		if err != nil {
+			return err
+		}
+
+		snaps = append(snaps, s)
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return snaps, nil
 }

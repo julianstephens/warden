@@ -1,4 +1,4 @@
-package chunker
+package storage
 
 type BlobType int
 

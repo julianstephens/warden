@@ -13,13 +13,14 @@ import (
 )
 
 type Store struct {
-	conf    warden.Config
-	backend common.Backend
-	master  *Key
+	conf     warden.Config
+	backend  common.Backend
+	master   *Key
+	Location string
 }
 
-func NewStore(be common.Backend) *Store {
-	return &Store{backend: be}
+func NewStore(be common.Backend, loc string) *Store {
+	return &Store{backend: be, Location: loc}
 }
 
 func OpenStore(ctx context.Context, storeLoc string) (*Store, error) {
@@ -28,7 +29,7 @@ func OpenStore(ctx context.Context, storeLoc string) (*Store, error) {
 		return nil, fmt.Errorf("unable to initialize localstorage backend: %+v", err)
 	}
 
-	s := NewStore(be)
+	s := NewStore(be, storeLoc)
 
 	err = s.open(ctx, storeLoc)
 	if err != nil {

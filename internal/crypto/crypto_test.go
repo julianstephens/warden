@@ -92,13 +92,13 @@ func TestNewRandom(t *testing.T) {
 // 			name:     "should return error when password is insecure",
 // 			input:    "blah",
 // 			expected: 0,
-// 			gotError: ErrInvalidPassword,
+// 			gotError: &warden.InvalidPasswordError{},
 // 		},
 // 	}
 
 // 	for _, c := range cases {
 // 		t.Run(c.name, func(t *testing.T) {
-// 			key, err := NewSessionKey(c.input)
+// 			// key, err := (c.input)
 
 // 			if c.gotError != nil {
 // 				if !errors.Is(err, c.gotError) {

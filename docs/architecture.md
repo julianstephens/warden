@@ -43,24 +43,26 @@
 
 ```py
 def backup(backup_dir):
-   files = get_all_files(backup_dir)
+  snapshots = get_all_snapshots()
 
-   for file in files:
-       pack = []
-       for chunk in chuker.chunk(file):
-           filename = hash(chunk)
+  files = get_all_files(backup_dir)
 
-           if exists(filename):
-               continue
+  for file in files:
+      pack = []
+      for chunk in chuker.chunk(file):
+          filename = hash(chunk)
 
-           to_store = compressAndEncrypt(chunk)
-           if len(to_store) >= min_pack_size:
-               write(filename, to_store)
+          if exists(filename):
+              continue
 
-           pack.append(chunk)
-           if len(pack) >= min_pack_size:
-               write(filename, pack)
-               pack = []
+          to_store = compressAndEncrypt(chunk)
+          if len(to_store) >= min_pack_size:
+              write(filename, to_store)
 
-   createSnapshot(backup_dir)
+          pack.append(chunk)
+          if len(pack) >= min_pack_size:
+              write(filename, pack)
+              pack = []
+
+  createSnapshot(backup_dir)
 ```

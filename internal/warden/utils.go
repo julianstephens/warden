@@ -57,3 +57,15 @@ func LoadJSON[T any](filename string) (T, error) {
 	}
 	return data, json.Unmarshal(fileData, &data)
 }
+
+func Filter[T any](data []T, filterFn func(t T) bool) []T {
+	filtered := []T{}
+
+	for _, d := range data {
+		if filterFn(d) {
+			filtered = append(filtered, d)
+		}
+	}
+
+	return filtered
+}
