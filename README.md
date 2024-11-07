@@ -8,7 +8,9 @@ A CLI for creating encrypted backups. See [architecture docs](/docs/architecture
 
 ## TODO
 
-- [ ] create backup command
+- [ ] add ability to create backup chunks/packs
+- [ ] add fault-tolerant save for chunks/packs
+- [ ] add cache for resuming backups
 
 ## Commands
 
