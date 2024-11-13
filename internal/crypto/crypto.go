@@ -184,6 +184,7 @@ func ReadPassword() (string, error) {
 	if err != nil {
 		return "", &warden.InvalidPasswordError{Msg: err.Error()}
 	}
+	term.Restore(int(os.Stdin.Fd()), state)
 
 	errNoMatch := &warden.InvalidPasswordError{Msg: "passwords do not match"}
 	if pwd != confPwd {

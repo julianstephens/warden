@@ -20,5 +20,5 @@ type InvalidPasswordError struct {
 }
 
 func (error *InvalidPasswordError) Error() string {
-	return fmt.Sprintf("invalid password:\n%s", error.Msg)
+	return fmt.Sprintf("invalid password: %s", error.Msg)
 }

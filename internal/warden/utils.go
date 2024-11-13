@@ -1,6 +1,7 @@
 package warden
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -68,4 +69,8 @@ func Filter[T any](data []T, filterFn func(t T) bool) []T {
 	}
 
 	return filtered
+}
+
+func Cleanup(ctx context.Context) error {
+	return nil
 }
