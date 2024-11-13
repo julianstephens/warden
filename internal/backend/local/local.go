@@ -88,10 +88,13 @@ func (l *Local) Save(ctx context.Context, event common.Event, reader common.IRea
 		if event.Name == nil {
 			return fmt.Errorf("no name provided for key file")
 		}
+		warden.Log.Debug().Msg("localstorage backend handling key save event...")
 		return l.WardenBackend.Handler.WriteKey(ctx, fmt.Sprintf("%s.json", *event.Name), reader)
 	case common.Config:
+		warden.Log.Debug().Msg("localstorage backend handling config save event...")
 		return l.WardenBackend.Handler.WriteConfig(ctx, reader)
 	case common.Pack:
+		warden.Log.Debug().Msg("localstorage backend handling pack save event...")
 		if event.Name == nil {
 			return fmt.Errorf("no name provided for pack file")
 		}

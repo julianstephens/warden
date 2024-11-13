@@ -30,10 +30,13 @@ func (h *LocalHandler) WriteConfig(ctx context.Context, reader common.IReader) e
 		return ErrNoStoreLocation
 	}
 
-	err := writeBytes(path.Join(loc.(string), "config.json"), bReader.Reader, bReader.Len)
+	filePath := path.Join(loc.(string), "config.json")
+	warden.Log.Debug().Msgf("writing %s", filePath)
+	err := writeBytes(filePath, bReader.Reader, bReader.Len)
 	if err != nil {
 		return err
 	}
+	warden.Log.Debug().Msg("write successful.")
 
 	return nil
 }
@@ -55,10 +58,12 @@ func (h *LocalHandler) WriteKey(ctx context.Context, filename string, reader com
 	}
 
 	keyfileLoc := path.Join(loc.(string), "keys", filename)
+	warden.Log.Debug().Msgf("writing %s", keyfileLoc)
 	err = writeBytes(keyfileLoc, bReader.Reader, bReader.Len)
 	if err != nil {
 		return err
 	}
+	warden.Log.Debug().Msg("write successful.")
 
 	return nil
 }

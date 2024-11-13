@@ -33,7 +33,9 @@ var BackendTypes = func() []string {
 }()
 
 type Backend interface {
+	// Save writes content to the specified backend
 	Save(ctx context.Context, event Event, reader IReader) error
+	// ListSnapshots retrieves all backup snapshots for a store
 	ListSnapshots(ctx context.Context) ([]storage.Snapshot, error)
 }
 

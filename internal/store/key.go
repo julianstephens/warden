@@ -52,6 +52,7 @@ func (k *Key) Decrypt() *crypto.Key {
 	return k.master
 }
 
+// LoadKey decrypts the store master key with a password
 func LoadKey(ctx context.Context, store *Store, storeLoc string, params crypto.Params, password string) (*Key, error) {
 	key, err := findKey(path.Join(storeLoc, "keys"), password)
 	if err != nil {
@@ -69,18 +70,24 @@ func LoadKey(ctx context.Context, store *Store, storeLoc string, params crypto.P
 	return key, nil
 }
 
+// AddKey creates a new master key and saves it
 func AddKey(ctx context.Context, store *Store, params crypto.Params, password string) (*Key, error) {
 	salt := crypto.NewSalt()
+	warden.Log.Debug().Msg("generated store salt.")
 
+	warden.Log.Debug().Msg("deriving master key from password, params, and salt...")
 	k, err := deriveKey(params, password, salt)
 	if err != nil {
 		return nil, err
 	}
+	warden.Log.Debug().Msg("master key created.")
 
+	warden.Log.Debug().Msg("generating keyfile...")
 	keyJson, err := json.Marshal(k)
 	if err != nil {
 		return nil, fmt.Errorf("unable to marshal key to json: %+v", err)
 	}
+	warden.Log.Debug().Msg("keyfile created.")
 
 	id := crypto.Hash(keyJson)
 	k.id = id
