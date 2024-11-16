@@ -2,11 +2,14 @@ package store_test
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path"
 	"testing"
+	"time"
 
 	mp "github.com/agiledragon/gomonkey/v2"
+	"github.com/rs/zerolog"
 
 	"github.com/julianstephens/warden/internal/backend"
 	"github.com/julianstephens/warden/internal/backend/common"
@@ -16,7 +19,7 @@ import (
 )
 
 const (
-	testDir = "./tmp/test"
+	testDir = "/home/julian/go/src/github.com/julianstephens/warden/tmp/test"
 	testPwd = "testsecurepassword123"
 )
 
@@ -29,6 +32,7 @@ func resetStore(t *testing.T) {
 }
 
 func createAndInitStore(ctx context.Context, t *testing.T) *store.Store {
+	warden.SetLog(warden.NewLog(os.Stderr, zerolog.ErrorLevel, time.RFC1123))
 	be, err := backend.NewBackend(common.LocalStorage, common.LocalStorageParams{Location: testDir})
 	if err != nil {
 		t.Fatal(err)
@@ -42,21 +46,6 @@ func createAndInitStore(ctx context.Context, t *testing.T) *store.Store {
 
 	return store
 }
-
-// func assertSliceEqual[T comparable](t *testing.T, expected []T, actual []T) {
-// 	t.Helper()
-// 	if len(expected) != len(actual) {
-// 		t.Errorf("expected (%+v) is not equal to actual (%+v): len(expected)=%d len(actual)=%d",
-// 			expected, actual, len(expected), len(actual))
-// 	}
-// 	for i := range expected {
-// 		if expected[i] != actual[i] {
-// 			t.Errorf("expected[%d] (%+v) is not equal to actual[%d] (%+v)",
-// 				i, expected[i],
-// 				i, actual[i])
-// 		}
-// 	}
-// }
 
 func TestInit(t *testing.T) {
 	resetStore(t)
@@ -104,6 +93,10 @@ func TestOpen(t *testing.T) {
 	originalKey := original.Key()
 	openedKey := opened.Key()
 
+	if !openedKey.Valid() {
+		t.Fatal("expected valid key, got invalid")
+	}
+
 	if originalKey.Hostname != openedKey.Hostname {
 		t.Fatalf("expected hostname %s, got %s", originalKey.Hostname, openedKey.Hostname)
 	}
@@ -121,11 +114,37 @@ func TestOpen(t *testing.T) {
 	}
 }
 
+func TestKey(t *testing.T) {
+	var key *store.Key = nil
+
+	repr := key.String()
+	testRepr := "<Key | nil>"
+
+	if repr != testRepr {
+		t.Fatalf("expected key %s, got %s", testRepr, repr)
+	}
+
+	testUser := "testuser"
+	testHost := "testhost"
+	testCreatedAt := time.Date(2023, 12, 31, 23, 59, 59, 0, time.UTC)
+	key = &store.Key{
+		Username:  testUser,
+		Hostname:  testHost,
+		CreatedAt: testCreatedAt,
+	}
+
+	repr = key.String()
+	testRepr = fmt.Sprintf("<Key | user: %s, host: %s, created: %s>", testUser, testHost, testCreatedAt)
+
+	if repr != testRepr {
+		t.Fatalf("expected key %s, got %s", testRepr, repr)
+	}
+}
+
 func TestBackup(t *testing.T) {
-	resetStore(t)
+	warden.SetLog(warden.NewLog(os.Stderr, zerolog.ErrorLevel, time.RFC1123))
 
 	ctx := context.Background()
-	createAndInitStore(ctx, t)
 
 	patches := mp.ApplyFuncReturn(crypto.ReadPassword, testPwd, nil)
 	defer patches.Reset()

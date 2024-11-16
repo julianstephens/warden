@@ -1,8 +1,10 @@
 package crypto
 
 import (
+	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"os"
@@ -34,6 +36,13 @@ var (
 
 func Hash(data []byte) warden.ID {
 	return sha256.Sum256(data)
+}
+
+func SecureHash(data []byte, secret []byte) string {
+	hmac := hmac.New(sha256.New, secret)
+	hmac.Write(data)
+	dataHmac := hmac.Sum(nil)
+	return hex.EncodeToString(dataHmac)
 }
 
 // NewIDKey generates a new user key with a password
@@ -166,7 +175,7 @@ func validateSaltLen(salt []byte) {
 func ReadPassword() (string, error) {
 	state, err := term.MakeRaw(int(os.Stdin.Fd()))
 	if err != nil {
-		panic(err)
+		panic(os.Stdin.Fd())
 	}
 	defer term.Restore(int(os.Stdin.Fd()), state)
 
@@ -186,9 +195,8 @@ func ReadPassword() (string, error) {
 	}
 	term.Restore(int(os.Stdin.Fd()), state)
 
-	errNoMatch := &warden.InvalidPasswordError{Msg: "passwords do not match"}
 	if pwd != confPwd {
-		return "", errNoMatch
+		return "", &warden.InvalidPasswordError{Msg: "passwords do not match"}
 	}
 
 	return pwd, nil

@@ -13,6 +13,8 @@ require (
 	golang.org/x/term v0.25.0
 )
 
+require github.com/xhd2015/xgo/runtime v1.0.52
+
 require (
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect

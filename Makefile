@@ -17,6 +17,4 @@ fmt:
 	@go fmt ./...
 
 test:
-	@go test `go list ./... | grep -v scripts` -coverprofile cover.prof
-	@covreport
-	@open cover.html
+	@xgo test -v -cover -coverpkg ./... -coverprofile=cover.out ./...

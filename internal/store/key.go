@@ -35,6 +35,7 @@ func (k *Key) ID() warden.ID {
 }
 
 func (k *Key) Valid() bool {
+	// TODO: valdiate key
 	return true
 }
 
@@ -45,7 +46,7 @@ func (k *Key) String() string {
 		return template("nil")
 	}
 
-	return template(fmt.Sprintf("user: %s, host: %s, created: %s>", k.Username, k.Hostname, k.CreatedAt))
+	return template(fmt.Sprintf("user: %s, host: %s, created: %s", k.Username, k.Hostname, k.CreatedAt))
 }
 
 func (k *Key) Decrypt() *crypto.Key {

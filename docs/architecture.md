@@ -43,9 +43,9 @@
 
 ```py
 def backup(backup_dir):
-  snapshots = get_all_snapshots()
+  latest_snapshot = get_latest_snapshot(backup_dir)
 
-  files = get_all_files(backup_dir)
+  filesToBackup, filesToCopy = get_all_files(backup_dir)
 
   for file in files:
       pack = []

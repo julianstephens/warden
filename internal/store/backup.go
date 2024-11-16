@@ -3,10 +3,14 @@ package store
 import (
 	"context"
 	"fmt"
+	"io"
 	"io/fs"
+	"os"
 	"path/filepath"
 	"sort"
 
+	"github.com/julianstephens/warden/internal/chunker"
+	"github.com/julianstephens/warden/internal/crypto"
 	"github.com/julianstephens/warden/internal/storage"
 	"github.com/julianstephens/warden/internal/warden"
 )
@@ -38,8 +42,14 @@ func backup(store *Store, ctx context.Context, backupDir string) (err error) {
 	if err != nil {
 		return
 	}
+
 	fmt.Println(pathsToBackup)
 	fmt.Println(pathsToCopy)
+
+	fmt.Printf("%-64s  %s\n", "HASH", "CHUNK SIZE")
+	for _, p := range pathsToBackup {
+		chunkAndHash(store, p)
+	}
 
 	return
 }
@@ -91,6 +101,41 @@ func sortBackupPaths(latestSnapshot *storage.Snapshot, backupDir string) (pathsT
 		pathsToBackup = append(pathsToBackup, path)
 		return nil
 	})
+
+	return
+}
+
+func chunkAndHash(store *Store, filepath string) (err error) {
+	warden.Log.Debug().Msgf("checking file %s exists...", filepath)
+
+	if _, err = os.Stat(filepath); err == nil {
+		var file *os.File
+		file, err = os.Open(filepath)
+		if err != nil {
+			return
+		}
+		defer file.Close()
+
+		warden.Log.Debug().Msg("chunking and hashing file...")
+		cKr := chunker.NewChunker(file)
+
+		for {
+			var chunk chunker.Chunk
+			chunk, err = cKr.Next()
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				return
+			}
+
+			hashedChunk := crypto.SecureHash(chunk.Data, store.master.user.Data)
+			fmt.Println(hashedChunk)
+			// TODO: check if chunk has already been backed up
+		}
+	} else {
+		warden.Log.Info().Msgf("file %s does not exist. skipping...", filepath)
+	}
 
 	return
 }

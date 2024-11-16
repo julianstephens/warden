@@ -18,7 +18,7 @@ func (c *ShowCmd) Run(ctx context.Context, globals *Globals) error {
 	warden.Log.Debug().Msg("ShowCmd.Run")
 
 	ctx, cancel := context.WithCancel(ctx)
-	errChan := make(chan error, 1)
+	errChan := make(chan error)
 
 	defer func() {
 		cancel()

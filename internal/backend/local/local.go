@@ -114,7 +114,11 @@ func (l *Local) ListSnapshots(ctx context.Context) ([]storage.Snapshot, error) {
 		return snaps, nil
 	}
 
-	err := filepath.WalkDir(snapDir, func(path string, d fs.DirEntry, err error) error {
+	err := filepath.WalkDir(snapDir, func(path string, d fs.DirEntry, dirErr error) error {
+		if d.IsDir() {
+			return nil
+		}
+
 		s, err := warden.LoadJSON[storage.Snapshot](path)
 		if err != nil {
 			return err
