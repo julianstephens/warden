@@ -15,14 +15,6 @@ import (
 	"github.com/xhd2015/xgo/runtime/mock"
 )
 
-// func assertEqual[T comparable](t *testing.T, expected T, actual T) {
-// 	t.Helper()
-// 	if expected == actual {
-// 		return
-// 	}
-// 	t.Errorf("expected (%+v) is not equal to actual (%+v)", expected, actual)
-// }
-
 func assertSliceEqual[T comparable](t *testing.T, expected []T, actual []T) {
 	t.Helper()
 	if len(expected) != len(actual) {

@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	testDir = "/home/julian/go/src/github.com/julianstephens/warden/tmp/test"
+	testDir = "/tmp/test"
 	testPwd = "testsecurepassword123"
 )
 
@@ -146,7 +146,9 @@ func TestBackup(t *testing.T) {
 
 	ctx := context.Background()
 
-	patches := mp.ApplyFuncReturn(crypto.ReadPassword, testPwd, nil)
+	patches := mp.NewPatches()
+	patches.ApplyFuncReturn(crypto.ReadPassword, testPwd, nil)
+
 	defer patches.Reset()
 
 	s, err := store.OpenStore(ctx, testDir)
@@ -154,12 +156,13 @@ func TestBackup(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = s.Backup(ctx, testDir)
+	_, err = s.Backup(ctx, testDir)
 	if err == nil {
 		t.Fatal("should error on backup dir equals warden store dir")
 	}
 
-	err = s.Backup(ctx, "/home/julian/workspace/notes")
+	volume := "/home/julian/workspace/notes"
+	_, err = s.Backup(ctx, volume)
 	if err != nil {
 		t.Fatal(err)
 	}
