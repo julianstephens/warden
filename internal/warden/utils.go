@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/user"
 	"strings"
 
 	"github.com/jedib0t/go-pretty/v6/text"
@@ -73,4 +74,33 @@ func Filter[T any](data []T, filterFn func(t T) bool) []T {
 
 func Cleanup(ctx context.Context) error {
 	return nil
+}
+
+func GetSystemInfo() (string, string, error) {
+	username, err := user.Current()
+	if err != nil {
+		err = fmt.Errorf("unable to get system user: %+v", err)
+		return "", "", err
+	}
+
+	hostname, err := os.Hostname()
+	if err != nil {
+		err = fmt.Errorf("unable to get system hostname: %+v", err)
+		return "", "", err
+	}
+
+	return username.Username, hostname, nil
+}
+
+func PathExists(path string) (bool, error) {
+	_, err := os.Stat(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false, nil
+		} else {
+			return false, err
+		}
+	}
+
+	return true, nil
 }

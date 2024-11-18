@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"os/user"
 	"path"
 	"strings"
 	"time"
@@ -171,22 +170,15 @@ func deriveKey(params crypto.Params, password string, salt []byte) (key *Key, er
 		return
 	}
 
-	username, err := user.Current()
+	username, hostname, err := warden.GetSystemInfo()
 	if err != nil {
-		err = fmt.Errorf("unable to get system user: %+v", err)
-		return
-	}
-
-	hostname, err := os.Hostname()
-	if err != nil {
-		err = fmt.Errorf("unable to get system hostname: %+v", err)
 		return
 	}
 
 	key = &Key{
 		master:    master,
 		user:      derivedUser,
-		Username:  username.Username,
+		Username:  username,
 		Hostname:  hostname,
 		CreatedAt: time.Now(),
 		Params:    params,

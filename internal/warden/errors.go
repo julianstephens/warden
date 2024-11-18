@@ -22,3 +22,12 @@ type InvalidPasswordError struct {
 func (error InvalidPasswordError) Error() string {
 	return fmt.Sprintf("invalid password: %s", error.Msg)
 }
+
+type InvalidArgumentError struct {
+	Expecting string
+	Got       string
+}
+
+func (error InvalidArgumentError) Error() string {
+	return fmt.Sprintf("expecting %s, got %s", error.Expecting, error.Got)
+}
