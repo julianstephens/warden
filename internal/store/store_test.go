@@ -9,6 +9,7 @@ import (
 	"time"
 
 	mp "github.com/agiledragon/gomonkey/v2"
+	"github.com/brianvoe/gofakeit/v7"
 	"github.com/rs/zerolog"
 
 	"github.com/julianstephens/warden/internal/backend"
@@ -19,8 +20,9 @@ import (
 )
 
 const (
-	testDir = "/tmp/test"
-	testPwd = "testsecurepassword123"
+	testDir    = "/tmp/test"
+	testVolume = "/tmp/notes"
+	testPwd    = "testsecurepassword123"
 )
 
 func resetStore(t *testing.T) {
@@ -142,6 +144,8 @@ func TestKey(t *testing.T) {
 }
 
 func TestBackup(t *testing.T) {
+	initTestVolume(t)
+
 	warden.SetLog(warden.NewLog(os.Stderr, zerolog.ErrorLevel, time.RFC1123))
 
 	ctx := context.Background()
@@ -161,9 +165,21 @@ func TestBackup(t *testing.T) {
 		t.Fatal("should error on backup dir equals warden store dir")
 	}
 
-	volume := "/home/julian/workspace/notes"
-	_, err = s.Backup(ctx, volume)
+	_, err = s.Backup(ctx, testVolume)
 	if err != nil {
 		t.Fatal(err)
+	}
+
+	os.RemoveAll(testVolume)
+}
+
+func initTestVolume(t *testing.T) {
+	if err := os.Mkdir(testVolume, os.ModePerm); err != nil {
+		t.Fatalf("unable to create test volume: %+v", err)
+	}
+
+	for range 10 {
+		data := []byte(gofakeit.Paragraph(10, 5, 12, "\n"))
+		os.WriteFile(path.Join(testVolume, fmt.Sprintf("%s.txt", crypto.Hash(data).String())), data, os.ModePerm)
 	}
 }

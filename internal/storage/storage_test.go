@@ -6,6 +6,7 @@ import (
 	"time"
 
 	mp "github.com/agiledragon/gomonkey/v2"
+
 	"github.com/julianstephens/warden/internal/storage"
 	"github.com/julianstephens/warden/internal/warden"
 )
@@ -26,29 +27,23 @@ func TestSnapshot(t *testing.T) {
 	patches.ApplyFuncReturn(time.Now, testTime)
 	defer patches.Reset()
 
-	snapshot, err := storage.NewSnapshot("")
+	_, err := storage.NewSnapshot("")
 	if err == nil {
 		t.Fatal("should error on empty backup :volume")
 	}
 
-	snapshot, err = storage.NewSnapshot("/path/to/nowhere")
+	_, err = storage.NewSnapshot("/path/to/nowhere")
 	if err == nil {
 		t.Fatal("should error on nonexistent backup volume")
 	}
 
-	snapshot, err = storage.NewSnapshot(testVolume)
+	snapshot, err := storage.NewSnapshot(testVolume)
 	if err != nil || snapshot == nil {
 		t.Fatal("should create a new snapshot instead nil or error")
 	}
 
 	if snapshot.BackupVolume != testVolume {
 		t.Fatalf("expected backup volume %s, got %s", testVolume, snapshot.BackupVolume)
-	}
-	if snapshot.Hostname != "HAL" {
-		t.Fatalf("expected hostname HAL, got %s", snapshot.Hostname)
-	}
-	if snapshot.Username != "julian" {
-		t.Fatalf("expected username julian, got %s", snapshot.Username)
 	}
 	if !snapshot.CreatedAt.Equal(testTime) {
 		t.Fatalf("expected created at %s, got %s", testTime.String(), snapshot.CreatedAt.String())
