@@ -6,11 +6,12 @@ import (
 	"math/rand"
 
 	"github.com/alecthomas/units"
+
+	"github.com/julianstephens/warden/internal/warden"
 )
 
 const (
 	normalization = 2
-	normalSize    = 8 * units.KB
 )
 
 type Chunker struct {
@@ -39,24 +40,39 @@ type Chunk struct {
 }
 
 type Options struct {
-	AverageSize int
-	Seed        int
+	AverageSize *int
+	Seed        *uint64
 }
 
-func NewChunker(reader io.Reader) *Chunker {
-	bits := int(math.Round(math.Log2(float64(normalSize))))
+func NewChunker(reader io.Reader, opts *Options) *Chunker {
+	n, err := units.ParseStrictBytes("8KiB")
+	if err != nil {
+		panic(err)
+	}
+
+	var seed uint64 = rand.Uint64()
+	var norm int = int(n)
+
+	if opts.AverageSize != nil {
+		norm = warden.DefaultIfNil[int](*opts.AverageSize, norm)
+	}
+	if opts.Seed != nil {
+		seed = warden.DefaultIfNil[uint64](*opts.Seed, seed)
+	}
+
+	bits := int(math.Round(math.Log2(float64(norm))))
 
 	c := &Chunker{
-		minSize: int(normalSize) / 4,
-		avgSize: int(normalSize),
-		maxSize: int(normalSize) * 8,
+		minSize: norm / 4,
+		avgSize: norm,
+		maxSize: norm * 8,
 		maskS:   uint64(mask(bits + normalization)),
 		maskL:   uint64(mask(bits - normalization)),
-		cursor:  int(normalSize) * 8 * 2,
+		cursor:  norm * 8 * 2,
 		offset:  0,
 		data:    reader,
-		curData: make([]byte, normalSize*8*2),
-		seed:    rand.Uint64(),
+		curData: make([]byte, norm*8*2),
+		seed:    seed,
 	}
 
 	return c

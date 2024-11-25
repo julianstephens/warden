@@ -36,7 +36,7 @@ func (h *LocalHandler) WriteConfig(ctx context.Context, reader common.IReader) e
 	}
 
 	loc := getCtxLocation(ctx, LocationCtxKey("location"))
-	if loc == nil {
+	if loc == nil || loc == "" {
 		return ErrNoStoreLocation
 	}
 

@@ -104,7 +104,7 @@ func (l *Local) Save(ctx context.Context, event common.Event, reader common.IRea
 		return fmt.Errorf("got invalid event type: %s", event.Type.String())
 	}
 
-	return nil
+	return fmt.Errorf("got invalid event type: %s", event.Type.String())
 }
 
 func (l *Local) ListSnapshots(ctx context.Context) ([]storage.Snapshot, error) {
