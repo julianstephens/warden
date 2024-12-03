@@ -43,8 +43,6 @@
 
 ### Pack Format
 
-https://arslexis.io/goplayground/#dWLoG8xqDxE
-
 ```
 Blob1 | ... | BlobN | Header | KeyLength | HeaderLength
 ```
