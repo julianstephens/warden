@@ -39,6 +39,47 @@
   - enlarges minimum chunk sized for higher CDC speed
   - normalized chunking to reduce chunks with sizes at the poles
 
+## Packing
+
+### Pack Format
+
+https://arslexis.io/goplayground/#dWLoG8xqDxE
+
+```
+Blob1 | ... | BlobN | Header | KeyLength | HeaderLength
+```
+
+### Pack Header
+
+```
+headerData Blob1 | ... | headerData BlobN | encrypted session key |
+```
+
+```go
+type headerData struct {
+	Type               uint8
+	Length             uint32
+	UncompressedLength uint32
+	ID                 warden.ID
+}
+```
+
+#### Header Creation
+
+1. create buf with capacity = # of blobs \* uncompressed blob data size
+2. for each blob build header data and id and append to buf
+3. encrypt buf
+4. append encrypted buf len and encrypted session key to encrypted buf
+5. verify header
+
+#### Header Verification
+
+1. read header data and length from end
+2. ensure header length is non-zero and not too small or too large
+3. read blobs from header data
+4. ensure number of decoded blobs matches number of expected blobs
+5. ensure decoded blob ids match expected ids
+
 ## Backups
 
 1. get the lastest snapshot for backup path
