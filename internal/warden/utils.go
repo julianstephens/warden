@@ -11,6 +11,14 @@ import (
 	"github.com/jedib0t/go-pretty/v6/text"
 )
 
+const (
+	_   = iota
+	KiB = 1 << (10 * iota)
+	MiB = 1 << (10 * iota)
+	GiB = 1 << (10 * iota)
+	TiB = 1 << (10 * iota)
+)
+
 func DefaultIfNil[T any](value interface{}, defaultValue interface{}) T {
 	if value != nil {
 		return value.(T)
@@ -103,4 +111,12 @@ func PathExists(path string) (bool, error) {
 	}
 
 	return true, nil
+}
+
+func IntPtr(i int) *int {
+	return &i
+}
+
+func StringPtr(s string) *string {
+	return &s
 }

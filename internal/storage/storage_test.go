@@ -1,19 +1,32 @@
 package storage_test
 
 import (
+	"bytes"
+	"context"
 	"os"
 	"testing"
 	"time"
 
 	mp "github.com/agiledragon/gomonkey/v2"
+	"github.com/brianvoe/gofakeit/v7"
+	"github.com/rs/zerolog"
 
-	"github.com/julianstephens/warden/internal/storage"
+	"github.com/julianstephens/warden/internal/backend"
+	"github.com/julianstephens/warden/internal/backend/common"
+	"github.com/julianstephens/warden/internal/crypto"
+	. "github.com/julianstephens/warden/internal/storage"
+	"github.com/julianstephens/warden/internal/store"
 	"github.com/julianstephens/warden/internal/warden"
 )
 
-const testVolume = "/tmp/notes"
+const (
+	testStore  = "/tmp/test"
+	testVolume = "/tmp/notes"
+	testPwd    = "testsecurepassword123"
+)
 
 func initTestVolume(t *testing.T) {
+	os.RemoveAll(testVolume)
 	if err := os.Mkdir(testVolume, os.ModePerm); err != nil {
 		t.Fatalf("unable to create test volume: %+v", err)
 	}
@@ -27,17 +40,17 @@ func TestSnapshot(t *testing.T) {
 	patches.ApplyFuncReturn(time.Now, testTime)
 	defer patches.Reset()
 
-	_, err := storage.NewSnapshot("")
+	_, err := NewSnapshot("")
 	if err == nil {
 		t.Fatal("should error on empty backup :volume")
 	}
 
-	_, err = storage.NewSnapshot("/path/to/nowhere")
+	_, err = NewSnapshot("/path/to/nowhere")
 	if err == nil {
 		t.Fatal("should error on nonexistent backup volume")
 	}
 
-	snapshot, err := storage.NewSnapshot(testVolume)
+	snapshot, err := NewSnapshot(testVolume)
 	if err != nil || snapshot == nil {
 		t.Fatal("should create a new snapshot instead nil or error")
 	}
@@ -58,7 +71,7 @@ func TestSnapshot(t *testing.T) {
 	os.RemoveAll(testVolume)
 }
 
-func assertChunksEqual(t *testing.T, chunk1, chunk2 storage.PackedChunk) {
+func assertChunksEqual(t *testing.T, chunk1, chunk2 PackedChunk) {
 	if chunk1.Chunk != chunk2.Chunk {
 		t.Fatalf("chunk %s does not equal %s", chunk1.Chunk, chunk2.Chunk)
 	}
@@ -73,10 +86,43 @@ func assertChunksEqual(t *testing.T, chunk1, chunk2 storage.PackedChunk) {
 	}
 }
 
+func TestPack(t *testing.T) {
+	resetStore(t)
+
+	store := createAndInitStore(context.Background(), t)
+	k := store.Key().Decrypt()
+
+	var buf bytes.Buffer
+	p := NewPack(k, &buf)
+
+	testData := []byte(gofakeit.Paragraph(10, 5, 12, "\n"))
+	encData, err := crypto.Encrypt(*k, testData, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	b := NewBlob(encData, Data, 0, 0)
+	_, err = p.Append(*b)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	key, err := crypto.NewSessionKey()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = p.Close(key)
+	if err != nil {
+		t.Fatal(err)
+	}
+	os.RemoveAll(testStore)
+}
+
 func TestGetPack(t *testing.T) {
 	initTestVolume(t)
 
-	snapshot, err := storage.NewSnapshot(testVolume)
+	snapshot, err := NewSnapshot(testVolume)
 	if err != nil || snapshot == nil {
 		t.Fatal("should create a new snapshot instead nil or error")
 	}
@@ -85,11 +131,11 @@ func TestGetPack(t *testing.T) {
 	testPackHash := warden.NewID().String()
 	testChunkStart := 0
 	testChunkEnd := 1024
-	testChunk := storage.PackedChunk{Chunk: testChunkHash, Pack: testPackHash, ChunkStart: int64(testChunkStart), ChunkEnd: int64(testChunkEnd)}
+	testChunk := PackedChunk{Chunk: testChunkHash, Pack: testPackHash, ChunkStart: int64(testChunkStart), ChunkEnd: int64(testChunkEnd)}
 
 	snapshot.PackedChunks = append(snapshot.PackedChunks,
 		testChunk,
-		storage.PackedChunk{Chunk: "xxx", Pack: "xxx", ChunkStart: int64(testChunkStart + 1024), ChunkEnd: int64(testChunkEnd + 1024)},
+		PackedChunk{Chunk: "xxx", Pack: "xxx", ChunkStart: int64(testChunkStart + 1024), ChunkEnd: int64(testChunkEnd + 1024)},
 	)
 
 	res := snapshot.GetPack(testChunkHash)
@@ -101,4 +147,28 @@ func TestGetPack(t *testing.T) {
 	}
 
 	os.RemoveAll(testVolume)
+}
+
+func resetStore(t *testing.T) {
+	os.RemoveAll(testStore)
+	err := warden.EnsureDir(testStore)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func createAndInitStore(ctx context.Context, t *testing.T) *store.Store {
+	warden.SetLog(warden.NewLog(os.Stderr, zerolog.ErrorLevel, time.RFC1123))
+	be, err := backend.NewBackend(common.LocalStorage, common.LocalStorageParams{Location: testStore})
+	if err != nil {
+		t.Fatal(err)
+	}
+	store := store.NewStore(be, testStore)
+
+	err = store.Init(ctx, crypto.DefaultParams, testPwd)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return store
 }

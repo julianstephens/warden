@@ -155,7 +155,7 @@ func deriveKey(params crypto.Params, password string, salt []byte) (key *Key, er
 		return
 	}
 
-	master, err := crypto.NewSessionKey(salt)
+	master, err := crypto.NewSessionKey()
 	if err != nil {
 		return
 	}

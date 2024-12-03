@@ -5,8 +5,6 @@ import (
 	"math"
 	"math/rand"
 
-	"github.com/alecthomas/units"
-
 	"github.com/julianstephens/warden/internal/warden"
 )
 
@@ -45,13 +43,8 @@ type Options struct {
 }
 
 func NewChunker(reader io.Reader, opts *Options) *Chunker {
-	n, err := units.ParseStrictBytes("8KiB")
-	if err != nil {
-		panic(err)
-	}
-
 	var seed uint64 = rand.Uint64()
-	var norm int = int(n)
+	var norm int = warden.MiB
 
 	if opts.AverageSize != nil {
 		norm = warden.DefaultIfNil[int](*opts.AverageSize, norm)
