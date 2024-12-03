@@ -36,7 +36,7 @@ jobs:
       - name: Go Install xgo
         run: curl -fsSL https://github.com/xhd2015/xgo/raw/master/script/install/install.sh | env INSTALL_TO_BIN=true bash
       - name: Go Test
-        run: xgo test -coverprofile=coverage.go ./...
+        run: xgo test -coverprofile=coverage.out ./...
       - name: Go Coverage
         uses: PaloAltoNetworks/cov@3.2.0
         with:
